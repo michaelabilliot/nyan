@@ -19,7 +19,6 @@
             <div id="nyan-cat-container">
                 <img src="assets/nyan-cat.png" id="nyan-cat-image" alt="Clickable Nyan Cat" draggable="false">
             </div>
-            
         </div>
 
         <!-- Right Side Panel -->
@@ -34,15 +33,18 @@
                     </div>
                 </div>
                 <div id="rebirth-info-container">
-                    <div id="rebirth-info">Rebirths: <span id="rebirth-count">0</span> (<span id="rebirth-multiplier-display">1.00x</span>) | Rebirth Points: <span id="rebirth-points-display">0</span></div>
+                    <div id="rebirth-info-main">Rebirths: <span id="rebirth-count">0</span> | Rebirth Points: <span id="rebirth-points-display">0</span></div>
+                    <div id="rebirth-info-boosts">
+                        <span>CPS Boost: <span id="cps-boost-display">0.00%</span></span>
+                        <span>NPC Boost: <span id="npc-boost-display">0.00%</span></span>
+                    </div>
                 </div>
-                
             </div>
             <div id="upgrades-list"></div>
         </div>
     </div>
-
-    <!-- UPDATED: Slide-out container now uses icons -->
+    
+    <!-- FIX: Moved container back outside for correct absolute positioning relative to the viewport. -->
     <div id="slide-out-container">
         <div id="settings-tab" class="slide-tab">
             <img src="assets/cog.png" alt="Settings">
@@ -52,30 +54,31 @@
         </div>
     </div>
 
+    <!-- Fullscreen Nyan Tree Screen -->
+    <div id="nyan-tree-screen" class="fullscreen-overlay">
+        <div id="nyan-tree-header">
+            <div id="nyan-tree-points">Rebirth Points: <span id="nyan-tree-points-display">0</span></div>
+        </div>
+        <div id="nyan-tree-canvas">
+            <div id="nyan-tree-wrapper">
+                <!-- Tree nodes will be generated here by JS -->
+            </div>
+        </div>
+        <div id="nyan-tree-footer">
+            <div id="nyan-tree-details-panel">
+                <div id="details-content">Select a node to see details.</div>
+                <button id="nyan-tree-buy-btn" class="btn" style="display: none;">Buy</button>
+            </div>
+            <button id="return-to-game-btn" class="btn">Return to Game</button>
+        </div>
+    </div>
+
+
     <!-- Modals -->
     <div id="shop-modal" class="modal-overlay">
         <div class="modal-content">
-            <button id="reset-game-btn" class="btn">Reset Progress</button>
             <h2>Skins & Boosts</h2>
             <div class="modal-grid" id="skins-grid"></div>
-            <button class="btn close-modal-btn">Close</button>
-        </div>
-    </div>
-
-    <div id="rebirth-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Rebirth Perks</h2>
-            <p>Spend Rebirth Points on permanent upgrades!</p>
-            <div class="modal-grid" id="rebirth-upgrades-grid"></div>
-            <button class="btn close-modal-btn">Close</button>
-        </div>
-    </div>
-
-    <div id="nyan-tree-modal" class="modal-overlay">
-        <div class="modal-content">
-            <h2>Nyan Tree</h2>
-            <p>Spend Tech Points on permanent upgrades!</p>
-            <div class="modal-grid" id="nyan-tree-grid"></div>
             <button class="btn close-modal-btn">Close</button>
         </div>
     </div>
@@ -87,6 +90,7 @@
             <div class="modal-buttons">
                 <button id="confirm-modal-yes" class="btn">Yes</button>
                 <button id="confirm-modal-no" class="btn">No</button>
+                <button id="confirm-modal-ok" class="btn" style="display: none;">OK</button>
             </div>
         </div>
     </div>
@@ -94,33 +98,40 @@
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>Settings</h2>
-            <div class="settings-grid">
-                <div class="setting-item">
-                    <label for="volume-slider">Volume:</label>
-                    <input type="range" id="volume-slider" min="0" max="100" value="50">
+            <!-- FIX: Redesigned settings layout for better consistency and scaling -->
+            <div class="settings-container">
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label for="volume-slider">Volume</label>
+                        <input type="range" id="volume-slider" min="0" max="100" value="50">
+                    </div>
+                    <div class="setting-item">
+                        <label for="sfx-toggle">SFX</label>
+                        <input type="checkbox" id="sfx-toggle" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label for="music-toggle">Music</label>
+                        <input type="checkbox" id="music-toggle" checked>
+                    </div>
                 </div>
-                <div class="setting-item">
-                    <label for="sfx-toggle">SFX:</label>
-                    <input type="checkbox" id="sfx-toggle" checked>
-                </div>
-                <div class="setting-item">
-                    <label for="music-toggle">Music:</label>
-                    <input type="checkbox" id="music-toggle" checked>
-                </div>
-                <div class="setting-item">
-                    <label for="dev-mode-toggle">Developer Mode:</label>
-                    <input type="checkbox" id="dev-mode-toggle">
-                </div>
-                <div id="dev-mode-cheats" style="display: none;">
-                    <button id="add-coins-cheat" class="btn">Add 1M Coins</button>
-                    <button id="add-tech-points-cheat" class="btn">Add 10 Tech Points</button>
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <label for="dev-mode-toggle">Developer Mode</label>
+                        <input type="checkbox" id="dev-mode-toggle">
+                    </div>
+                    <div id="dev-mode-cheats" style="display: none;">
+                        <button id="add-coins-cheat" class="btn">Add 1M Coins</button>
+                        <button id="add-rebirth-points-cheat" class="btn">Add 10 Rebirth Points</button>
+                    </div>
                 </div>
             </div>
-            <button class="btn close-modal-btn">Close</button>
+            <div class="settings-footer">
+                <button id="reset-game-btn" class="btn">Reset All Progress</button>
+                <button class="btn close-modal-btn">Close</button>
+            </div>
         </div>
     </div>
 
-    <!-- Achievement Toast Notification -->
     <div id="achievement-toast">
         <div id="achievement-icon">🏆</div>
         <div id="achievement-text">

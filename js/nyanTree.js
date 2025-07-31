@@ -1,77 +1,167 @@
 import { gameState, T } from './state.js';
-import { formatNumber, updateDisplay } from './ui.js';
+import { NYAN_TREE_UPGRADES } from './data.js';
 
-export const NYAN_TREE_UPGRADES = [
-    // Main Branch (Core Boosts)
-    { id: 'cosmic_clicks', name: 'Cosmic Clicks', description: 'Permanently increases base click power by 2% per level.', cost: 1, maxLevel: 10, dependencies: [] },
-    { id: 'eternal_engine', name: 'Eternal Engine', description: 'Permanently increases base CPS by 1% per level.', cost: 1, maxLevel: 10, dependencies: [] },
-    { id: 'efficient_engineering', name: 'Efficient Engineering', description: 'All upgrades are 1% cheaper per level.', cost: 5, maxLevel: 5, dependencies: [] },
+let selectedNode = null;
 
-    // Exploration Branch (Unlocks Planets)
-    { id: 'unlock_mars_exploration', name: 'Unlock Mars Exploration', description: 'Unlocks Mars and its associated upgrades in the main shop.', cost: 2, maxLevel: 1, dependencies: [] },
-    { id: 'unlock_nyan_planet_voyage', name: 'Unlock Nyan Planet Voyage', description: 'Unlocks the Nyan Planet.', cost: 10, maxLevel: 1, dependencies: ['unlock_mars_exploration'] },
+export function setupNyanTreePanning() {
+    const canvas = document.getElementById('nyan-tree-canvas');
+    const wrapper = document.getElementById('nyan-tree-wrapper');
+    let isPanning = false;
+    let startX, startY;
+    let initialX = 0, initialY = 0;
 
-    // Special Branch (Unique Abilities)
-    { id: 'golden_touch', name: 'Golden Touch', description: 'Makes the Golden Nyan skin a prestige unlock instead of a coin purchase.', cost: 3, maxLevel: 1, dependencies: [] },
-    { id: 'rebirth_multiplier_boost', name: 'Rebirth Multiplier Boost', description: 'Increase the bonus from the main Rebirth button from +10% to +12%.', cost: 5, maxLevel: 1, dependencies: [] },
-];
+    canvas.addEventListener('mousedown', (e) => {
+        isPanning = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        canvas.style.cursor = 'grabbing';
+        const transform = new DOMMatrix(getComputedStyle(wrapper).transform);
+        initialX = transform.m41;
+        initialY = transform.m42;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if (!isPanning) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        wrapper.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px)`;
+    });
+
+    const stopPanning = () => {
+        isPanning = false;
+        canvas.style.cursor = 'grab';
+    };
+
+    canvas.addEventListener('mouseup', stopPanning);
+    canvas.addEventListener('mouseleave', stopPanning);
+}
+
+
+function buyNyanTreeUpgrade(upgrade) {
+    if (!upgrade || !gameState.isRebirthing) return; // FIX: Prevent buying if not in rebirth mode.
+    const ownedLevel = gameState.nyanTreeUpgrades[upgrade.id] || 0;
+    const isMaxLevel = ownedLevel >= upgrade.maxLevel;
+
+    if (gameState.rebirthPoints >= upgrade.cost && !isMaxLevel) {
+        T({
+            ...gameState,
+            rebirthPoints: gameState.rebirthPoints - upgrade.cost,
+            nyanTreeUpgrades: {
+                ...gameState.nyanTreeUpgrades,
+                [upgrade.id]: (ownedLevel || 0) + 1
+            }
+        });
+        renderNyanTree();
+        const currentSelectedUpgrade = NYAN_TREE_UPGRADES.find(u => u.id === selectedNode.id);
+        if(currentSelectedUpgrade) selectNode(currentSelectedUpgrade);
+    }
+}
+
+function selectNode(upgrade) {
+    selectedNode = upgrade;
+    const detailsPanel = document.getElementById('details-content');
+    const buyBtn = document.getElementById('nyan-tree-buy-btn');
+    
+    const ownedLevel = gameState.nyanTreeUpgrades[upgrade.id] || 0;
+    const maxLevelText = upgrade.maxLevel > 1 ? `/${upgrade.maxLevel}` : '';
+
+    detailsPanel.innerHTML = `
+        <h4>${upgrade.name} (Level ${ownedLevel}${maxLevelText})</h4>
+        <p>${upgrade.description}</p>
+        <p>Cost: ${upgrade.cost} Rebirth Points</p>
+    `;
+
+    const canAfford = gameState.rebirthPoints >= upgrade.cost;
+    const isMaxed = ownedLevel >= upgrade.maxLevel;
+
+    // FIX: Only show the buy button if the player is in the special post-rebirth phase.
+    if (!isMaxed && gameState.isRebirthing) {
+        buyBtn.style.display = 'block';
+        buyBtn.textContent = `Buy (Cost: ${upgrade.cost})`;
+        buyBtn.disabled = !canAfford;
+        buyBtn.onclick = () => buyNyanTreeUpgrade(upgrade);
+    } else {
+        buyBtn.style.display = 'none';
+    }
+
+    document.querySelectorAll('.nyan-tree-node.selected').forEach(n => n.classList.remove('selected'));
+    const nodeEl = document.querySelector(`.nyan-tree-node[data-id="${upgrade.id}"]`);
+    if (nodeEl) nodeEl.classList.add('selected');
+}
 
 export function renderNyanTree() {
-    const nyanTreeGrid = document.getElementById('nyan-tree-grid');
-    nyanTreeGrid.innerHTML = '';
+    const wrapper = document.getElementById('nyan-tree-wrapper');
+    const pointsDisplay = document.getElementById('nyan-tree-points-display');
+    wrapper.innerHTML = ''; // Clear previous nodes and lines
+    pointsDisplay.textContent = gameState.rebirthPoints;
+
+    if (NYAN_TREE_UPGRADES.some(u => u.isStarter) && !gameState.nyanTreeUpgrades['starter']) {
+        gameState.nyanTreeUpgrades['starter'] = 1;
+    }
+
+    // Render nodes
     NYAN_TREE_UPGRADES.forEach(upgrade => {
-        const card = document.createElement('div');
-        card.className = 'upgrade-item'; // Reusing upgrade-item style for now
-        card.dataset.id = upgrade.id;
+        const dependenciesMet = upgrade.dependencies.every(depId => (gameState.nyanTreeUpgrades[depId] || 0) > 0);
+        if (!dependenciesMet && !upgrade.isStarter) return;
+
+        const node = document.createElement('div');
+        node.className = 'nyan-tree-node';
+        node.dataset.id = upgrade.id;
+        node.style.left = `${upgrade.x}px`;
+        node.style.top = `${upgrade.y}px`;
+        node.style.transform = 'translate(-50%, -50%)';
 
         const ownedLevel = gameState.nyanTreeUpgrades[upgrade.id] || 0;
-        const isMaxLevel = upgrade.maxLevel && ownedLevel >= upgrade.maxLevel;
-        const isAffordable = gameState.rebirthPoints >= upgrade.cost;
-        const dependenciesMet = upgrade.dependencies.every(depId => (gameState.nyanTreeUpgrades[depId] || 0) > 0);
-        const isLocked = !dependenciesMet;
-
-        if (isLocked) {
-            card.classList.add('disabled');
-        } else if (!isAffordable) {
-            card.classList.add('disabled');
-        } else if (isMaxLevel) {
-            card.classList.add('purchased');
+        if (ownedLevel >= upgrade.maxLevel) {
+            node.classList.add('purchased');
+        } else if (ownedLevel > 0) {
+            node.classList.add('in-progress');
         }
-
-        let levelText = '';
-        if (upgrade.maxLevel) {
-            levelText = `Level: ${ownedLevel}/${upgrade.maxLevel}`;
-        } else {
-            levelText = ownedLevel > 0 ? 'Purchased' : '';
+        
+        if (gameState.rebirthPoints < upgrade.cost && ownedLevel < upgrade.maxLevel) {
+            node.classList.add('cant-afford');
         }
-
-        card.innerHTML = `
-            <div class="upgrade-header">
-                <span class="upgrade-name">${upgrade.name}</span>
-                <span class="upgrade-owned">${levelText}</span>
-            </div>
-            <p class="upgrade-desc">${upgrade.description}</p>
-            <div class="upgrade-info">
-                <span class="upgrade-cost">Cost: ${upgrade.cost} Rebirth Points</span>
-            </div>
-        `;
-
-        if (!isLocked && isAffordable && !isMaxLevel) {
-            card.addEventListener('click', () => {
-                if (gameState.rebirthPoints >= upgrade.cost) {
-                    T({
-                        ...gameState,
-                        rebirthPoints: gameState.rebirthPoints - upgrade.cost,
-                        nyanTreeUpgrades: {
-                            ...gameState.nyanTreeUpgrades,
-                            [upgrade.id]: (gameState.nyanTreeUpgrades[upgrade.id] || 0) + 1
-                        }
-                    });
-                    renderNyanTree();
-                    updateDisplay();
-                }
-            });
-        }
-        nyanTreeGrid.appendChild(card);
+        
+        node.innerHTML = `<img src="${upgrade.icon}" alt="${upgrade.name}">`;
+        node.addEventListener('click', () => selectNode(upgrade));
+        
+        wrapper.appendChild(node);
     });
+
+    // Render lines
+    NYAN_TREE_UPGRADES.forEach(upgrade => {
+        const dependenciesMet = upgrade.dependencies.every(depId => (gameState.nyanTreeUpgrades[depId] || 0) > 0);
+        if (!dependenciesMet) return;
+
+        upgrade.dependencies.forEach(depId => {
+            const parent = NYAN_TREE_UPGRADES.find(u => u.id === depId);
+            if (!parent) return;
+
+            const line = document.createElement('div');
+            line.className = 'nyan-tree-line';
+            
+            const x1 = parent.x;
+            const y1 = parent.y;
+            const x2 = upgrade.x;
+            const y2 = upgrade.y;
+
+            const length = Math.sqrt(Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2));
+            const angle = Math.atan2(y2 - y1, x2 - x1) * (180 / Math.PI);
+
+            line.style.width = `${length}px`;
+            line.style.left = `${x1}px`;
+            line.style.top = `${y1}px`;
+            line.style.transform = `rotate(${angle}deg)`;
+            
+            wrapper.insertBefore(line, wrapper.firstChild);
+        });
+    });
+
+    if (!selectedNode) {
+        document.getElementById('details-content').innerHTML = 'Select a node to see details.';
+        document.getElementById('nyan-tree-buy-btn').style.display = 'none';
+    } else {
+        const currentSelectedUpgrade = NYAN_TREE_UPGRADES.find(u => u.id === selectedNode.id);
+        if(currentSelectedUpgrade) selectNode(currentSelectedUpgrade);
+    }
 }

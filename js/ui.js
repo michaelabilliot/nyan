@@ -1,43 +1,59 @@
 import { gameState, T } from './state.js';
-import { calculateTotalCPS, getRebirthMultiplier, getPurchaseMultiplier } from './core.js';
+import { calculateTotalCPS, getGlobalMultiplier, getPurchaseMultiplier } from './core.js';
 import { UPGRADES_DATA, SKINS_DATA } from './data.js';
 import { buyUpgrade } from './upgrades.js';
 
 const coinCountEl = document.getElementById('coin-count');
 const cpsCountEl = document.getElementById('cps-count');
 const rebirthCountEl = document.getElementById('rebirth-count');
-const rebirthMultiplierEl = document.getElementById('rebirth-multiplier-display');
 const rebirthPointsEl = document.getElementById('rebirth-points-display');
+const cpsBoostEl = document.getElementById('cps-boost-display');
+const npcBoostEl = document.getElementById('npc-boost-display');
 const rebirthBtn = document.getElementById('rebirth-btn');
 const upgradesListEl = document.getElementById('upgrades-list');
 const skinsGrid = document.getElementById('skins-grid');
 const achievementToast = document.getElementById('achievement-toast');
-const slideOutContainer = document.getElementById('slide-out-container');
-const rebirthInfoContainer = document.getElementById('rebirth-info-container');
+const nyanTreeTab = document.getElementById('nyan-tree-tab');
+const settingsTab = document.getElementById('settings-tab');
 
 export function updatePrestigeUI() {
-    rebirthInfoContainer.style.display = 'block'; // Always show the info bar
-    // FIX: Changed logic to always show the slide-out tabs, regardless of rebirths.
-    slideOutContainer.style.display = 'flex'; 
+    settingsTab.style.display = 'flex';
+    nyanTreeTab.style.display = gameState.rebirths > 0 ? 'flex' : 'none';
 }
 
-export function formatNumber(num) {
-    if (num < 1000) return num.toFixed(0);
-    if (num < 1e6) return (num / 1e3).toFixed(2) + 'K';
-    if (num < 1e9) return (num / 1e6).toFixed(2) + 'M';
-    if (num < 1e12) return (num / 1e9).toFixed(2) + 'B';
-    if (num < 1e15) return (num / 1e12).toFixed(2) + 'T';
-    if (num < 1e18) return (num / 1e15).toFixed(2) + 'Q';
-    if (num < 1e21) return (num / 1e18).toFixed(2) + 'Qt';
+export function formatNumber(num, isFloat = false) {
+    if (num < 1000000) {
+        return isFloat ? num.toFixed(2) : Math.floor(num).toLocaleString('en-US');
+    }
+
+    const suffixes = ["", "M", "B", "T", "Q", "Qt", "S", "Sp", "O", "N"];
+    const tier = Math.floor(Math.log10(Math.abs(num)) / 3);
+    
+    if (tier < suffixes.length) {
+        const suffix = suffixes[tier - 1];
+        const scale = Math.pow(10, tier * 3);
+        const scaled = num / scale;
+
+        const formatted = scaled.toFixed(2);
+        const parts = formatted.split('.');
+        return `${parts[0]}.<span class="decimal-part">${parts[1]}</span>${suffix ? `<span class="suffix-part">${suffix}</span>` : ''}`;
+    }
+    
     return num.toExponential(2);
 }
 
+
 export function updateDisplay() {
-    coinCountEl.textContent = formatNumber(gameState.coins);
-    cpsCountEl.textContent = formatNumber(calculateTotalCPS());
+    coinCountEl.innerHTML = formatNumber(gameState.coins);
+    cpsCountEl.innerHTML = formatNumber(calculateTotalCPS());
+
     rebirthCountEl.textContent = gameState.rebirths;
-    rebirthMultiplierEl.textContent = `${(getRebirthMultiplier()).toFixed(2)}x`;
     rebirthPointsEl.textContent = gameState.rebirthPoints;
+
+    const boostPercentage = (getGlobalMultiplier() - 1) * 100;
+    cpsBoostEl.textContent = `${boostPercentage.toFixed(2)}%`;
+    npcBoostEl.textContent = `${boostPercentage.toFixed(2)}%`;
+
     rebirthBtn.innerHTML = `Rebirth`;
     updatePrestigeUI();
 }
@@ -50,19 +66,26 @@ export function updateUpgradeStyles() {
         const upgradeId = itemEl.dataset.id;
         const upgrade = UPGRADES_DATA.find(u => u.id === upgradeId);
         if (!upgrade) continue;
+        
+        // FIX: Calculate total cost based on whether multiplier is 'ALL' or a number.
+        let totalCost;
+        let canAfford = false;
 
-        const owned = gameState.upgrades[upgrade.id]?.owned || 0;
-        let totalCost = 0;
-        for (let i = 0; i < multiplier; i++) {
-            totalCost += Math.ceil(upgrade.baseCost * Math.pow(upgrade.costIncrease, owned + i));
+        if (multiplier === 'ALL') {
+            const affordableAmount = Math.floor(gameState.coins / upgrade.baseCost);
+            totalCost = affordableAmount * upgrade.baseCost;
+            canAfford = affordableAmount > 0;
+        } else {
+            totalCost = upgrade.baseCost * multiplier;
+            canAfford = gameState.coins >= totalCost;
         }
 
         const costEl = itemEl.querySelector('.upgrade-cost');
         if (costEl) {
-            costEl.textContent = `Cost: ${formatNumber(totalCost)}`;
+            costEl.innerHTML = `Cost: ${formatNumber(totalCost)}`;
         }
 
-        if (gameState.coins >= totalCost) {
+        if (canAfford) {
             itemEl.classList.remove('disabled');
         } else {
             itemEl.classList.add('disabled');
@@ -88,13 +111,13 @@ export function renderUpgrades() {
             <p class="upgrade-desc">${upgrade.description}</p>
             <div class="upgrade-info">
                 <span class="upgrade-cost">Cost: ...</span>
-                <span class="upgrade-power">${upgrade.type === 'click' ? `+${formatNumber(upgrade.power)} CPC` : `+${formatNumber(upgrade.power)} CPS`}</span>
+                <span class="upgrade-power">${upgrade.type === 'click' ? `+${formatNumber(upgrade.power)} NPC` : `+${formatNumber(upgrade.power)} CPS`}</span>
             </div>
         `;
         itemEl.addEventListener('click', () => buyUpgrade(upgrade.id));
         upgradesListEl.appendChild(itemEl);
     });
-    updateUpgradeStyles(); // Initial style update
+    updateUpgradeStyles();
 }
 
 export function renderShop() {
