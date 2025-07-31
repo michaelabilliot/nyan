@@ -1,0 +1,153 @@
+:root {
+    --panel-bg: rgba(255, 255, 255, 0.1);
+    --item-bg: rgba(255, 255, 255, 0.05);
+    --item-hover-bg: rgba(255, 255, 255, 0.15);
+    --border-color: rgba(255, 255, 255, 0.3);
+    --text-light: #f0f0f0;
+    --text-dark: #333;
+    --accent-yellow: #fee440;
+    --accent-pink: #ff69b4;
+    --accent-cyan: #00ffff;
+    --accent-green: #9ef01a;
+}
+
+body {
+    background-size: cover;
+    background-position: center center;
+    background-repeat: no-repeat;
+    font-family: 'Fredoka One', cursive;
+    color: var(--text-light);
+    margin: 0;
+    overflow: hidden;
+    user-select: none;
+    transition: background-image 0.5s ease-in-out;
+}
+
+#game-container { display: flex; height: 100vh; width: 100vw; }
+#main-area { flex: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
+#right-panel { flex: 1; background-color: var(--panel-bg); backdrop-filter: blur(10px); border-left: 2px solid var(--border-color); padding: 20px; display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none; }
+#right-panel::-webkit-scrollbar { display: none; }
+
+#stats-display { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); text-align: center; text-shadow: 3px 3px 6px rgba(0,0,0,0.7); z-index: 100; }
+#stats-display h1 { font-size: 5em; margin: 0; font-family: 'Press Start 2P', cursive; color: #fff; }
+#stats-display p { font-size: 1.8em; margin-top: 10px; color: #eee; }
+
+#nyan-cat-container { position: relative; z-index: 10; animation: bobbing 2s infinite alternate ease-in-out; }
+#nyan-cat-image { width: 450px; cursor: pointer; transition: transform 0.1s ease; position: relative; image-rendering: pixelated; }
+#nyan-cat-image:active { transform: scale(1.1); }
+@keyframes bobbing { 0% { transform: translateY(-20px); } 100% { transform: translateY(20px); } }
+
+#rainbow-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+.rainbow-particle { position: absolute; width: 30px; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
+
+.floating-number { position: absolute; font-size: 2.5em; font-weight: bold; color: var(--accent-yellow); text-shadow: 2px 2px 4px black; pointer-events: none; animation: float-up 1.2s ease-out forwards; z-index: 20; }
+@keyframes float-up { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-180px) scale(1.5); opacity: 0; } }
+
+#controls-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+#rebirth-info-container { width: 100%; text-align: center; margin-bottom: 10px; }
+#rebirth-info { font-size: 1em; background-color: rgba(0,0,0,0.3); padding: 5px 10px; border-radius: 8px; display: inline-block; }
+
+.btn, #multiplier-btn { font-family: 'Fredoka One', cursive; font-size: 1.2em; padding: 10px 20px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.5); color: var(--text-dark); background: linear-gradient(145deg, rgba(255,255,255,0.5), rgba(255,255,255,0.2)); backdrop-filter: blur(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); cursor: pointer; transition: all 0.2s ease; }
+.btn:hover, #multiplier-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.3); }
+.btn:active, #multiplier-btn:active { transform: translateY(1px); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+#rebirth-btn { background: linear-gradient(145deg, var(--accent-pink), #ff1a75); color: #fff; text-shadow: 1px 1px 2px rgba(0,0,0,0.4); }
+#shop-btn { background: linear-gradient(145deg, var(--accent-cyan), #00b8d4); }
+#multiplier-btn { background: linear-gradient(145deg, var(--accent-yellow), #ffc300); }
+
+#rebirth-progress-bar-container { width: 100%; height: 10px; background-color: rgba(0,0,0,0.3); border-radius: 5px; margin-bottom: 20px; }
+#rebirth-progress-bar { height: 100%; width: 0%; background: linear-gradient(90deg, var(--accent-pink), var(--accent-cyan)); border-radius: 5px; transition: width 0.2s linear; }
+
+#upgrades-list { display: flex; flex-direction: column; gap: 15px; }
+.upgrade-item { background-color: var(--item-bg); border: 2px solid var(--border-color); border-radius: 15px; padding: 15px; cursor: pointer; transition: all 0.2s ease; position: relative; }
+.upgrade-item:hover { background-color: var(--item-hover-bg); transform: scale(1.02); box-shadow: 0 0 15px var(--accent-pink); }
+.upgrade-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+.upgrade-name { font-size: 1.4em; font-weight: bold; color: var(--text-light); }
+.upgrade-owned { font-size: 1.6em; color: var(--accent-green); font-family: 'Press Start 2P', cursive; }
+.upgrade-desc { font-size: 0.9em; color: #d1d1ff; margin-bottom: 8px; }
+.upgrade-info { display: flex; justify-content: space-between; align-items: center; }
+.upgrade-cost { font-size: 1.2em; color: var(--accent-yellow); font-weight: bold; }
+.upgrade-power { font-size: 1em; color: var(--accent-cyan); font-weight: bold; }
+
+.milestone-upgrades-container { display: flex; gap: 10px; margin-top: 12px; }
+.milestone-btn { width: 32px; height: 32px; border-radius: 50%; background-color: var(--item-bg); border: 2px solid var(--border-color); cursor: pointer; transition: all 0.2s; position: relative; }
+.milestone-btn::before { content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 12px; height: 12px; border-radius: 50%; background: var(--accent-yellow); box-shadow: 0 0 8px var(--accent-yellow); opacity: 0.5; transition: all 0.2s; }
+.milestone-btn:hover::before { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+.milestone-btn.purchased { background-color: var(--accent-green); border-color: #fff; }
+.milestone-btn.purchased::before { background: #fff; box-shadow: 0 0 10px #fff; opacity: 1; }
+.milestone-tooltip { visibility: hidden; width: 220px; background-color: #0b023a; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 100; bottom: 130%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-family: 'Fredoka One', cursive; font-size: 0.9em; border: 1px solid var(--border-glow-pink); }
+.milestone-btn:hover .milestone-tooltip { visibility: visible; opacity: 1; }
+
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(5px); background-color: rgba(0, 0, 0, 0.7); justify-content: center; align-items: center; z-index: 1000; }
+.modal-content { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 30px; border-radius: 20px; border: 2px solid var(--border-color); box-shadow: 0 0 30px rgba(255, 117, 214, 0.5); text-align: center; min-width: 500px; max-width: 80%; position: relative; }
+.modal-content h2 { margin-top: 0; font-size: 2.5em; color: var(--accent-pink); text-shadow: 2px 2px 3px rgba(0,0,0,0.5); }
+#reset-game-btn { position: absolute; top: 15px; right: 15px; background: linear-gradient(to bottom, #e74c3c, #c0392b); font-size: 0.8em; padding: 5px 10px; color: #fff; }
+.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-height: 60vh; overflow-y: auto; padding: 10px; margin-bottom: 20px; }
+.skin-card { background-color: var(--item-bg); padding: 15px; border-radius: 10px; border: 2px solid var(--border-color); text-align: left; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 15px; }
+.skin-card:hover { transform: scale(1.02); box-shadow: 0 0 15px var(--accent-pink); }
+.skin-card.owned { border-color: var(--accent-yellow); }
+.skin-card.equipped { border-color: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); }
+.skin-card img { width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated; background: rgba(0,0,0,0.2); border-radius: 8px; }
+
+#planet-selector { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; background: var(--panel-bg); padding: 10px; border-radius: 15px; border: 2px solid var(--border-color); }
+.planet-btn { color: var(--text-dark); }
+.planet-btn.active { background: var(--accent-pink); color: #fff; }
+
+#achievement-toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(145deg, #1e155b, #0c0730); border: 2px solid var(--accent-green); color: #fff; padding: 15px; border-radius: 15px; display: flex; align-items: center; gap: 15px; z-index: 2000; transition: bottom 0.5s ease-in-out; box-shadow: 0 0 20px var(--accent-green); }
+#achievement-toast.show { bottom: 20px; }
+#achievement-icon { font-size: 2.5em; }
+#achievement-title { font-weight: bold; }
+</style>
+</head>
+<body>
+    <div id="game-container">
+        <div id="main-area">
+            <div id="stats-display">
+                <h1 id="coin-count">0</h1>
+                <p><span id="cps-count">0.0</span> Nyan Coins per second</p>
+            </div>
+            <div id="rainbow-container"></div>
+            <div id="nyan-cat-container">
+                <img src="assets/nyan-cat.png" id="nyan-cat-image" alt="Clickable Nyan Cat" draggable="false">
+            </div>
+            <div id="planet-selector"></div>
+        </div>
+        <div id="right-panel">
+            <div id="controls-header">
+                <button id="shop-btn" class="btn">Shop</button>
+                <button id="rebirth-btn" class="btn">Rebirth</button>
+                <div id="multiplier-container">
+                    <span>Buy:</span>
+                    <button id="multiplier-btn">1x</button>
+                </div>
+            </div>
+            <div id="rebirth-info-container">
+                 <div id="rebirth-info">Rebirths: <span id="rebirth-count">0</span> (<span id="rebirth-multiplier-display">1.00x</span>) | Points: <span id="rebirth-points-display">0</span></div>
+            </div>
+            <div id="rebirth-progress-bar-container"><div id="rebirth-progress-bar"></div></div>
+            <div id="upgrades-list"></div>
+        </div>
+    </div>
+    
+    <div id="shop-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button id="reset-game-btn" class="btn">Reset Progress</button>
+            <h2>Skins & Boosts</h2>
+            <div class="modal-grid" id="skins-grid"></div>
+            <button class="btn close-modal-btn">Close</button>
+        </div>
+    </div>
+
+    <div id="rebirth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Rebirth Perks</h2>
+            <p>Spend Rebirth Points on permanent upgrades!</p>
+            <div class="modal-grid" id="rebirth-upgrades-grid"></div>
+            <button class="btn close-modal-btn">Close</button>
+        </div>
+    </div>
+    
+    <div id="achievement-toast"><div id="achievement-icon">🏆</div><div id="achievement-text"><div id="achievement-title"></div><div id="achievement-desc"></div></div></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
