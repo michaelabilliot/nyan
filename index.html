@@ -19,30 +19,36 @@
             <div id="nyan-cat-container">
                 <img src="assets/nyan-cat.png" id="nyan-cat-image" alt="Clickable Nyan Cat" draggable="false">
             </div>
-            <div id="planet-selector">
-                <button class="planet-btn active" data-planet="earth">Earth</button>
-                <button class="planet-btn" data-planet="mars" disabled>Mars</button>
-                <button class="planet-btn" data-planet="nyan" disabled>Nyan Planet</button>
-            </div>
+            
         </div>
 
         <!-- Right Side Panel -->
         <div id="right-panel">
-            <div id="controls-header">
-                <button id="shop-btn" class="btn">Shop</button>
-                <button id="rebirth-btn" class="btn">Rebirth</button>
-                <div id="multiplier-container">
-                    <span>Buy:</span>
-                    <button id="multiplier-btn">1x</button>
+            <div id="right-panel-header">
+                <div id="controls-header">
+                    <button id="shop-btn" class="btn">Shop</button>
+                    <button id="rebirth-btn" class="btn">Rebirth</button>
+                    <div id="multiplier-container">
+                        <span>Buy:</span>
+                        <button id="multiplier-btn">1x</button>
+                    </div>
                 </div>
-            </div>
-            <div id="rebirth-info-container">
-                <div id="rebirth-info">Rebirths: <span id="rebirth-count">0</span> (<span id="rebirth-multiplier-display">1.00x</span>) | Points: <span id="rebirth-points-display">0</span></div>
-            </div>
-            <div id="rebirth-progress-bar-container">
-                <div id="rebirth-progress-bar"></div>
+                <div id="rebirth-info-container">
+                    <div id="rebirth-info">Rebirths: <span id="rebirth-count">0</span> (<span id="rebirth-multiplier-display">1.00x</span>) | Rebirth Points: <span id="rebirth-points-display">0</span></div>
+                </div>
+                
             </div>
             <div id="upgrades-list"></div>
+        </div>
+    </div>
+
+    <!-- UPDATED: Slide-out container now uses icons -->
+    <div id="slide-out-container">
+        <div id="settings-tab" class="slide-tab">
+            <img src="assets/cog.png" alt="Settings">
+        </div>
+        <div id="nyan-tree-tab" class="slide-tab">
+            <img src="assets/tree.png" alt="Nyan Tree">
         </div>
     </div>
 
@@ -61,6 +67,55 @@
             <h2>Rebirth Perks</h2>
             <p>Spend Rebirth Points on permanent upgrades!</p>
             <div class="modal-grid" id="rebirth-upgrades-grid"></div>
+            <button class="btn close-modal-btn">Close</button>
+        </div>
+    </div>
+
+    <div id="nyan-tree-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Nyan Tree</h2>
+            <p>Spend Tech Points on permanent upgrades!</p>
+            <div class="modal-grid" id="nyan-tree-grid"></div>
+            <button class="btn close-modal-btn">Close</button>
+        </div>
+    </div>
+
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="confirm-modal-title"></h2>
+            <p id="confirm-modal-message"></p>
+            <div class="modal-buttons">
+                <button id="confirm-modal-yes" class="btn">Yes</button>
+                <button id="confirm-modal-no" class="btn">No</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>Settings</h2>
+            <div class="settings-grid">
+                <div class="setting-item">
+                    <label for="volume-slider">Volume:</label>
+                    <input type="range" id="volume-slider" min="0" max="100" value="50">
+                </div>
+                <div class="setting-item">
+                    <label for="sfx-toggle">SFX:</label>
+                    <input type="checkbox" id="sfx-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="music-toggle">Music:</label>
+                    <input type="checkbox" id="music-toggle" checked>
+                </div>
+                <div class="setting-item">
+                    <label for="dev-mode-toggle">Developer Mode:</label>
+                    <input type="checkbox" id="dev-mode-toggle">
+                </div>
+                <div id="dev-mode-cheats" style="display: none;">
+                    <button id="add-coins-cheat" class="btn">Add 1M Coins</button>
+                    <button id="add-tech-points-cheat" class="btn">Add 10 Tech Points</button>
+                </div>
+            </div>
             <button class="btn close-modal-btn">Close</button>
         </div>
     </div>

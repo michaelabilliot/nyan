@@ -42,11 +42,7 @@ export const UPGRADES_DATA = [
     { id: 'god_cat', name: 'God Cat', description: 'The ultimate being.', type: 'click', baseCost: 5e15, power: 5e12, costIncrease: 1.17, planet: 'nyan' },
 ];
 
-export const REBIRTH_UPGRADES_DATA = [
-    { id: 'permanent_cpc', name: 'Cosmic Clicks', description: 'Permanently increase click power by 10%.', cost: 1, maxLevel: 10 },
-    { id: 'permanent_cps', name: 'Eternal Engine', description: 'Permanently increase CPS by 5%.', cost: 1, maxLevel: 20 },
-    { id: 'cheaper_upgrades', name: 'Efficient Engineering', description: 'All upgrades are 1% cheaper.', cost: 5, maxLevel: 10 },
-];
+
 
 export const SKINS_DATA = [ 
     { id: 'default', name: 'Classic Nyan', cost: 0, image: 'assets/nyan-cat.png', trail: 'assets/rainbow-slice.png', trailHeight: 200 }, 
@@ -60,3 +56,4 @@ export const ACHIEVEMENTS_DATA = {
     'upgrade_100': { name: 'Upgrade Enthusiast', description: 'Buy 100 total upgrades.', condition: (gameState) => Object.values(gameState.upgrades).reduce((sum, u) => sum + u.owned, 0) >= 100, reward: 10000 },
     'first_rebirth': { name: 'Again!', description: 'Perform your first rebirth.', condition: (gameState) => gameState.rebirths >= 1, reward: 100000 },
 };
+

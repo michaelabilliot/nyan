@@ -1,8 +1,7 @@
 import { gameState, T } from './state.js';
 import { calculateTotalCPS, getRebirthMultiplier, getPurchaseMultiplier } from './core.js';
-import { UPGRADES_DATA, PLANET_DATA, SKINS_DATA } from './data.js';
+import { UPGRADES_DATA, SKINS_DATA } from './data.js';
 import { buyUpgrade } from './upgrades.js';
-import { changePlanet } from './main.js';
 
 const coinCountEl = document.getElementById('coin-count');
 const cpsCountEl = document.getElementById('cps-count');
@@ -10,10 +9,17 @@ const rebirthCountEl = document.getElementById('rebirth-count');
 const rebirthMultiplierEl = document.getElementById('rebirth-multiplier-display');
 const rebirthPointsEl = document.getElementById('rebirth-points-display');
 const rebirthBtn = document.getElementById('rebirth-btn');
-const rebirthProgressBar = document.getElementById('rebirth-progress-bar');
 const upgradesListEl = document.getElementById('upgrades-list');
-const planetSelector = document.getElementById('planet-selector');
 const skinsGrid = document.getElementById('skins-grid');
+const achievementToast = document.getElementById('achievement-toast');
+const slideOutContainer = document.getElementById('slide-out-container');
+const rebirthInfoContainer = document.getElementById('rebirth-info-container');
+
+export function updatePrestigeUI() {
+    rebirthInfoContainer.style.display = 'block'; // Always show the info bar
+    // FIX: Changed logic to always show the slide-out tabs, regardless of rebirths.
+    slideOutContainer.style.display = 'flex'; 
+}
 
 export function formatNumber(num) {
     if (num < 1000) return num.toFixed(0);
@@ -30,10 +36,38 @@ export function updateDisplay() {
     coinCountEl.textContent = formatNumber(gameState.coins);
     cpsCountEl.textContent = formatNumber(calculateTotalCPS());
     rebirthCountEl.textContent = gameState.rebirths;
-    rebirthMultiplierEl.textContent = `${(getRebirthMultiplier()).toFixed(2)}`;
+    rebirthMultiplierEl.textContent = `${(getRebirthMultiplier()).toFixed(2)}x`;
     rebirthPointsEl.textContent = gameState.rebirthPoints;
-    rebirthBtn.innerHTML = `Rebirth <span style="font-size: 0.7em; display: block;">+10% Boost</span>`;
-    rebirthProgressBar.style.width = `${Math.min((gameState.coins / 1e7) * 100, 100)}%`;
+    rebirthBtn.innerHTML = `Rebirth`;
+    updatePrestigeUI();
+}
+
+export function updateUpgradeStyles() {
+    const multiplier = getPurchaseMultiplier();
+    const upgradeItems = upgradesListEl.children;
+
+    for (const itemEl of upgradeItems) {
+        const upgradeId = itemEl.dataset.id;
+        const upgrade = UPGRADES_DATA.find(u => u.id === upgradeId);
+        if (!upgrade) continue;
+
+        const owned = gameState.upgrades[upgrade.id]?.owned || 0;
+        let totalCost = 0;
+        for (let i = 0; i < multiplier; i++) {
+            totalCost += Math.ceil(upgrade.baseCost * Math.pow(upgrade.costIncrease, owned + i));
+        }
+
+        const costEl = itemEl.querySelector('.upgrade-cost');
+        if (costEl) {
+            costEl.textContent = `Cost: ${formatNumber(totalCost)}`;
+        }
+
+        if (gameState.coins >= totalCost) {
+            itemEl.classList.remove('disabled');
+        } else {
+            itemEl.classList.add('disabled');
+        }
+    }
 }
 
 export function renderUpgrades() {
@@ -41,56 +75,26 @@ export function renderUpgrades() {
     const upgradesForPlanet = UPGRADES_DATA.filter(u => u.planet === gameState.currentPlanet);
 
     upgradesForPlanet.forEach(upgrade => {
-        const multiplier = getPurchaseMultiplier();
-        let totalCost = 0;
         const owned = gameState.upgrades[upgrade.id]?.owned || 0;
-        for (let i = 0; i < multiplier; i++) { totalCost += Math.ceil(upgrade.baseCost * Math.pow(upgrade.costIncrease, owned + i)); }
-
         const itemEl = document.createElement('div');
-        itemEl.className = `upgrade-item ${gameState.coins >= totalCost ? '' : 'disabled'}`;
+        itemEl.className = 'upgrade-item';
         itemEl.dataset.id = upgrade.id;
 
-        let powerText = upgrade.type === 'click' ? `+${formatNumber(upgrade.power)} CPC` : `+${formatNumber(upgrade.power)} CPS`;
-
-        itemEl.innerHTML = `<div class="upgrade-header"><span class="upgrade-name">${upgrade.name}</span><span class="upgrade-owned">${owned}</span></div><p class="upgrade-desc">${upgrade.description}</p><div class="upgrade-info"><span class="upgrade-cost">Cost: ${formatNumber(totalCost)}</span><span class="upgrade-power">${powerText}</span></div>`;
+        itemEl.innerHTML = `
+            <div class="upgrade-header">
+                <span class="upgrade-name">${upgrade.name}</span>
+                <span class="upgrade-owned">${owned}</span>
+            </div>
+            <p class="upgrade-desc">${upgrade.description}</p>
+            <div class="upgrade-info">
+                <span class="upgrade-cost">Cost: ...</span>
+                <span class="upgrade-power">${upgrade.type === 'click' ? `+${formatNumber(upgrade.power)} CPC` : `+${formatNumber(upgrade.power)} CPS`}</span>
+            </div>
+        `;
         itemEl.addEventListener('click', () => buyUpgrade(upgrade.id));
         upgradesListEl.appendChild(itemEl);
     });
-}
-
-export function renderPlanets() {
-    planetSelector.innerHTML = '';
-    Object.keys(PLANET_DATA).forEach(planetId => {
-        const planet = PLANET_DATA[planetId];
-        const btn = document.createElement('button');
-        btn.className = 'btn planet-btn';
-        btn.dataset.planet = planetId;
-        btn.textContent = planet.name;
-
-        if (gameState.unlockedPlanets.includes(planetId)) {
-            btn.disabled = false;
-            if (gameState.currentPlanet === planetId) btn.classList.add('active');
-            btn.addEventListener('click', () => changePlanet(planetId, renderPlanets, renderUpgrades));
-        } else {
-            btn.disabled = true;
-            btn.textContent = `${planet.name} (Unlock: ${formatNumber(planet.unlockCost)})`;
-            if (gameState.coins >= planet.unlockCost) {
-                btn.disabled = false;
-                btn.addEventListener('click', () => {
-                    if (gameState.coins >= planet.unlockCost) {
-                        T({ 
-                            ...gameState, 
-                            coins: gameState.coins - planet.unlockCost,
-                            unlockedPlanets: [...gameState.unlockedPlanets, planetId]
-                        });
-                        changePlanet(planetId, renderPlanets, renderUpgrades);
-                    }
-                });
-            }
-        }
-
-        planetSelector.appendChild(btn);
-    });
+    updateUpgradeStyles(); // Initial style update
 }
 
 export function renderShop() {
@@ -124,7 +128,6 @@ export function renderShop() {
                 renderShop();
             }
         });
-
         skinsGrid.appendChild(card);
     });
 }
