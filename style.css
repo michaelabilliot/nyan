@@ -46,6 +46,15 @@ body.dark-theme {
     }
 }
 
+@keyframes word-cat-glitch {
+    0% { transform: translate(0, 0) skew(0deg, 0deg); }
+    25% { transform: translate(5px, -5px) skew(-5deg, 5deg) scale(1.1, 0.9); }
+    50% { transform: translate(-5px, 5px) skew(5deg, -5deg); }
+    75% { transform: translate(3px, -3px) skew(-3deg, 3deg) scale(0.9, 1.1); }
+    100% { transform: translate(0, 0) skew(0deg, 0deg); }
+}
+
+
 body {
     background-color: #000;
     font-family: 'Fredoka One', cursive;
@@ -76,6 +85,9 @@ body {
     background-repeat: repeat-x;
     animation: scroll-bg 80s linear infinite;
     z-index: -2;
+    image-rendering: pixelated; /* Ensures pixel art isn't blurry */
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
 }
 
 #game-container::after {
@@ -91,6 +103,17 @@ body {
     mix-blend-mode: screen; 
     z-index: -1;
 }
+
+body.word-mode #game-container::before {
+    background-image: url('../assets/word-bg.png');
+    animation: none;
+    background-size: cover;
+    background-position: center;
+}
+body.word-mode #game-container::after {
+    display: none;
+}
+
 
 #right-panel { 
     flex: 1; 
@@ -214,7 +237,7 @@ body {
     display: flex;
     flex-direction: column; 
     gap: 10px;
-    transition: opacity 0.5s ease-out; /* MODIFIED */
+    transition: opacity 0.5s ease-out;
 }
 .slide-tab {
     background-color: var(--panel-bg);
@@ -247,7 +270,7 @@ body {
 #nyan-cat-container { position: relative; z-index: 10; transition: opacity 0.5s ease-out;}
 #nyan-cat-image { width: 450px; cursor: pointer; transition: transform 0.1s ease; position: relative; image-rendering: pixelated; }
 #nyan-cat-image:active { transform: scale(1.1); }
-#rainbow-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; transition: opacity 0.5s ease-out; } /* MODIFIED */
+#rainbow-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; transition: opacity 0.5s ease-out; }
 .rainbow-particle { position: absolute; width: 30px; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
 .rainbow-particle-scrolling {
     background-repeat: repeat-y;
@@ -322,8 +345,11 @@ body {
 .achievement-card.locked { opacity: 0.5; }
 .achievement-card.locked .achievement-card-icon { filter: grayscale(1) brightness(0.8); }
 .achievement-card-icon { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; filter: invert(1); }
+.achievement-card-text { margin-right: auto; text-align: left; }
 .achievement-card-text h4 { margin: 0 0 5px 0; font-size: 1.1em; color: var(--accent-yellow); }
 .achievement-card-text p { margin: 0; font-size: 0.9em; }
+.achievement-card.clickable.unlocked { cursor: pointer; border-color: var(--accent-cyan); }
+.achievement-card.clickable.unlocked:hover { box-shadow: 0 0 20px var(--accent-cyan); }
 
 
 #settings-modal .modal-content { min-width: 450px; max-width: 600px; }
@@ -451,6 +477,43 @@ body {
 #shop-actions { display: flex; justify-content: center; gap: 15px; width: 100%; }
 #shop-actions .btn { min-width: 180px; }
 
+/* ADDED: Easter Egg Modal Styles */
+#easter-eggs-modal .modal-content {
+    max-width: 700px;
+}
+#easter-eggs-content {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 15px;
+    scrollbar-width: none;
+}
+#easter-eggs-content::-webkit-scrollbar {
+    display: none;
+}
+/* MODIFIED: Removed justify-content to allow margin-right: auto to work */
+#easter-eggs-content .achievement-card {
+    /* justify-content: space-between; */
+}
+#easter-eggs-content .achievement-card-icon {
+    filter: none;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.3);
+    width: 60px;
+    height: 60px;
+    padding: 5px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+#easter-eggs-content .btn {
+    flex-shrink: 0;
+    padding: 8px 15px;
+    font-size: 1em;
+}
+
+
 #transition-overlay {
     position: fixed;
     top: 0;
@@ -478,5 +541,5 @@ body {
 #nyan-tree-screen #nyan-tree-wrapper,
 #nyan-tree-screen #nyan-tree-footer {
     opacity: 0;
-    transition: opacity 1.5s ease-in-out; /* Slower fade for dramatic effect */
+    transition: opacity 1.5s ease-in-out;
 }

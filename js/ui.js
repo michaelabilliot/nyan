@@ -4,13 +4,10 @@ import { UPGRADES_DATA, SKINS_DATA, ACHIEVEMENTS_DATA } from './data.js';
 import { buyUpgrade } from './upgrades.js';
 import { calculateCostForAmount, calculateMaxAffordable } from './utils.js';
 import { playSfx } from './audio.js';
+import { updateSkinAndMode } from './main.js';
 
 const coinCountEl = document.getElementById('coin-count');
 const cpsCountEl = document.getElementById('cps-count');
-const rebirthCountEl = document.getElementById('rebirth-count');
-const rebirthPointsEl = document.getElementById('rebirth-points-display');
-const cpsBoostEl = document.getElementById('cps-boost-display');
-const npcBoostEl = document.getElementById('npc-boost-display');
 const rebirthBtn = document.getElementById('rebirth-btn');
 const upgradesListEl = document.getElementById('upgrades-list');
 const achievementToast = document.getElementById('achievement-toast');
@@ -24,12 +21,18 @@ const skinDetailsPanel = document.getElementById('skin-details-panel');
 
 let currentSkinIndex = 0;
 
+// Helper to get only the skins that should appear in the main shop
+function getVisibleShopSkins() {
+    return SKINS_DATA.filter(s => !s.secret);
+}
+
 export function updatePrestigeUI() {
     settingsTab.style.display = 'flex';
     nyanTreeTab.style.display = gameState.rebirths > 0 ? 'flex' : 'none';
 }
 
 export function formatNumber(num, isFloat = false) {
+    if (gameState.isWordMode) return gameState.wordModeText.numbers;
     if (num < 1000000) {
         return isFloat ? num.toFixed(2) : Math.floor(num).toLocaleString('en-US');
     }
@@ -54,14 +57,18 @@ export function updateDisplay() {
     coinCountEl.innerHTML = formatNumber(gameState.coins);
     cpsCountEl.innerHTML = formatNumber(calculateTotalCPS(gameState));
 
-    rebirthCountEl.textContent = gameState.rebirths;
-    rebirthPointsEl.textContent = gameState.rebirthPoints;
-
-    const boostPercentage = (getGlobalMultiplier(gameState) - 1) * 100;
-    cpsBoostEl.textContent = `${boostPercentage.toFixed(2)}%`;
-    npcBoostEl.textContent = `${boostPercentage.toFixed(2)}%`;
-
-    rebirthBtn.innerHTML = `Rebirth`;
+    if (gameState.isWordMode) {
+        document.querySelector("#rebirth-info-main").innerHTML = gameState.wordModeText.rebirthInfo;
+        document.querySelector("#cps-boost-display").textContent = gameState.wordModeText.boosts;
+        document.querySelector("#npc-boost-display").textContent = gameState.wordModeText.boosts;
+        rebirthBtn.innerHTML = gameState.wordModeText.rebirthButton;
+    } else {
+        document.querySelector("#rebirth-info-main").innerHTML = `Rebirths: <span id="rebirth-count">${gameState.rebirths}</span> | Rebirth Points: <span id="rebirth-points-display">${gameState.rebirthPoints}</span>`;
+        const boostPercentage = (getGlobalMultiplier(gameState) - 1) * 100;
+        document.querySelector("#cps-boost-display").textContent = `${boostPercentage.toFixed(2)}%`;
+        document.querySelector("#npc-boost-display").textContent = `${boostPercentage.toFixed(2)}%`;
+        rebirthBtn.innerHTML = `Rebirth`;
+    }
     updatePrestigeUI();
 }
 
@@ -77,9 +84,7 @@ export function updateUpgradeStyles() {
         const owned = gameState.upgrades[upgradeId]?.owned || 0;
         
         const ownedEl = itemEl.querySelector('.upgrade-owned');
-        if (ownedEl && ownedEl.textContent !== owned.toString()) {
-            ownedEl.textContent = owned;
-        }
+        ownedEl.textContent = gameState.isWordMode ? gameState.wordModeText.owned : owned;
 
         let totalCost;
         let amountToBuy;
@@ -93,15 +98,17 @@ export function updateUpgradeStyles() {
         }
 
         const costEl = itemEl.querySelector('.upgrade-cost');
-        if (costEl) {
-            costEl.innerHTML = `Cost: ${formatNumber(totalCost)}`;
-        }
+        costEl.innerHTML = gameState.isWordMode ? gameState.wordModeText.cost : `Cost: ${formatNumber(totalCost)}`;
 
         const powerEl = itemEl.querySelector('.upgrade-power');
         if (powerEl) {
-            const totalPower = upgrade.power * amountToBuy;
-            const powerType = upgrade.type === 'click' ? 'NPC' : 'CPS';
-            powerEl.innerHTML = `+${formatNumber(totalPower)} ${powerType}`;
+            if (gameState.isWordMode) {
+                powerEl.innerHTML = gameState.wordModeText.power;
+            } else {
+                const totalPower = upgrade.power * amountToBuy;
+                const powerType = upgrade.type === 'click' ? 'NPC' : 'CPS';
+                powerEl.innerHTML = `+${formatNumber(totalPower)} ${powerType}`;
+            }
         }
 
         if (gameState.coins >= totalCost && amountToBuy > 0) {
@@ -123,13 +130,13 @@ export function renderUpgrades() {
 
         itemEl.innerHTML = `
             <div class="upgrade-header">
-                <span class="upgrade-name">${upgrade.name}</span>
+                <span class="upgrade-name">${gameState.isWordMode ? gameState.wordModeText.upgradeNames : upgrade.name}</span>
                 <span class="upgrade-owned">${owned}</span>
             </div>
-            <p class="upgrade-desc">${upgrade.description}</p>
+            <p class="upgrade-desc">${gameState.isWordMode ? gameState.wordModeText.descriptions : upgrade.description}</p>
             <div class="upgrade-info">
                 <span class="upgrade-cost">Cost: ...</span>
-                <span class="upgrade-power">${upgrade.type === 'click' ? `+${formatNumber(upgrade.power)} NPC` : `+${formatNumber(upgrade.power)} CPS`}</span>
+                <span class="upgrade-power">${gameState.isWordMode ? gameState.wordModeText.power : (upgrade.type === 'click' ? `+${formatNumber(upgrade.power)} NPC` : `+${formatNumber(upgrade.power)} CPS`)}</span>
             </div>
         `;
         itemEl.addEventListener('click', () => buyUpgrade(upgrade.id));
@@ -156,7 +163,8 @@ function updateCarouselDisplay() {
 }
 
 function updateShopDetailsAndButton() {
-    const selectedSkin = SKINS_DATA[currentSkinIndex];
+    const visibleSkins = getVisibleShopSkins();
+    const selectedSkin = visibleSkins[currentSkinIndex];
     if (!selectedSkin) return;
 
     const isUnlocked = gameState.rebirths >= selectedSkin.rebirthUnlock;
@@ -164,43 +172,44 @@ function updateShopDetailsAndButton() {
     const displayName = !isUnlocked && selectedSkin.secretName ? selectedSkin.secretName : selectedSkin.name;
 
     skinDetailsPanel.innerHTML = `
-        <h4>${displayName}</h4>
-        <p>${isUnlocked ? selectedSkin.description : '???'}</p>
-        ${isUnlocked && selectedSkin.bonus ? `<p><b>Passive Bonus:</b> +${((selectedSkin.bonus.value - 1) * 100).toFixed(1)}% Global Multiplier</p>` : ''}
-        ${!isUnlocked ? `<p>Requires ${selectedSkin.rebirthUnlock} Rebirths to unlock.</p>` : ''}
-        <p style="font-size: 0.8em; opacity: 0.7;">(Bonuses from all unlocked skins are always active)</p>
+        <h4>${gameState.isWordMode ? gameState.wordModeText.skinName : displayName}</h4>
+        <p>${gameState.isWordMode ? gameState.wordModeText.descriptions : (isUnlocked ? selectedSkin.description : '???')}</p>
+        ${isUnlocked && selectedSkin.bonus && !gameState.isWordMode ? `<p><b>Passive Bonus:</b> +${((selectedSkin.bonus.value - 1) * 100).toFixed(1)}% Global Multiplier</p>` : ''}
+        ${!isUnlocked && !gameState.isWordMode ? `<p>Requires ${selectedSkin.rebirthUnlock} Rebirths to unlock.</p>` : ''}
+        ${!gameState.isWordMode ? `<p style="font-size: 0.8em; opacity: 0.7;">(Bonuses from all unlocked skins are always active)</p>` : ''}
     `;
 
     if (isEquipped) {
-        shopBuyBtn.innerHTML = 'Equipped';
+        shopBuyBtn.innerHTML = gameState.isWordMode ? gameState.wordModeText.shopButton : 'Equipped';
         shopBuyBtn.disabled = true;
     } else if (isUnlocked) {
-        shopBuyBtn.innerHTML = selectedSkin.action === 'fight' ? 'Fight?' : 'Equip';
+        shopBuyBtn.innerHTML = gameState.isWordMode ? gameState.wordModeText.shopButton : (selectedSkin.action === 'fight' ? 'Fight?' : 'Equip');
         shopBuyBtn.disabled = false;
     } else {
-        shopBuyBtn.innerHTML = selectedSkin.secretName ? '???' : `Locked`;
+        shopBuyBtn.innerHTML = gameState.isWordMode ? gameState.wordModeText.shopButton : (selectedSkin.secretName ? '???' : `Locked`);
         shopBuyBtn.disabled = true;
     }
 }
 
 export function navigateCarousel(direction) {
-    currentSkinIndex = (currentSkinIndex + direction + SKINS_DATA.length) % SKINS_DATA.length;
+    const visibleSkins = getVisibleShopSkins();
+    currentSkinIndex = (currentSkinIndex + direction + visibleSkins.length) % visibleSkins.length;
     updateCarouselDisplay();
 }
 
 export function handleShopAction() {
-    const selectedSkin = SKINS_DATA[currentSkinIndex];
+    const visibleSkins = getVisibleShopSkins();
+    const selectedSkin = visibleSkins[currentSkinIndex];
     if (!selectedSkin) return;
 
     const isUnlocked = gameState.rebirths >= selectedSkin.rebirthUnlock;
 
     if (isUnlocked && gameState.currentSkin !== selectedSkin.id) {
         if (selectedSkin.action === 'fight') {
-            // Placeholder for future fight mechanic
             alert("The fight is not yet ready.");
         } else {
             playSfx('skinBuy');
-            T({ currentSkin: selectedSkin.id });
+            updateSkinAndMode(selectedSkin.id);
         }
     }
     
@@ -208,8 +217,9 @@ export function handleShopAction() {
 }
 
 export function renderShop() {
+    const visibleSkins = getVisibleShopSkins();
     skinCarouselTrack.innerHTML = '';
-    SKINS_DATA.forEach((skin, index) => {
+    visibleSkins.forEach((skin, index) => {
         const item = document.createElement('div');
         item.className = 'skin-carousel-item';
         item.dataset.index = index;
@@ -231,7 +241,7 @@ export function renderShop() {
         skinCarouselTrack.appendChild(item);
     });
     
-    currentSkinIndex = SKINS_DATA.findIndex(s => s.id === gameState.currentSkin);
+    currentSkinIndex = visibleSkins.findIndex(s => s.id === gameState.currentSkin);
     if (currentSkinIndex === -1) currentSkinIndex = 0;
 
     setTimeout(updateCarouselDisplay, 0);
@@ -247,7 +257,7 @@ export function renderAchievements() {
         categoryDiv.className = 'achievement-category';
         
         const categoryTitle = document.createElement('h3');
-        categoryTitle.textContent = categoryName;
+        categoryTitle.textContent = gameState.isWordMode ? gameState.wordModeText.category : categoryName;
         categoryDiv.appendChild(categoryTitle);
 
         const gridLayout = document.createElement('div');
@@ -257,6 +267,7 @@ export function renderAchievements() {
             const achievement = category[id];
             const card = document.createElement('div');
             card.className = 'achievement-card';
+            card.dataset.id = id;
             
             const isUnlocked = gameState.unlockedAchievements.includes(id);
 
@@ -266,11 +277,24 @@ export function renderAchievements() {
                 card.classList.add('locked');
             }
 
+            if (achievement.isClickable && isUnlocked) {
+                card.classList.add('clickable');
+            }
+
+            let titleText, descText;
+            if (gameState.isWordMode) {
+                titleText = gameState.wordModeText.achievementName;
+                descText = gameState.wordModeText.descriptions;
+            } else {
+                titleText = isUnlocked ? achievement.name : '??????';
+                descText = isUnlocked ? achievement.description : 'Keep playing to unlock!';
+            }
+
             card.innerHTML = `
                 <img src="assets/icons/trophy.png" alt="Trophy" class="achievement-card-icon">
                 <div class="achievement-card-text">
-                    <h4>${isUnlocked ? achievement.name : '??????'}</h4>
-                    <p>${isUnlocked ? achievement.description : 'Keep playing to unlock!'}</p>
+                    <h4>${titleText}</h4>
+                    <p>${descText}</p>
                 </div>
             `;
             gridLayout.appendChild(card);
@@ -280,6 +304,39 @@ export function renderAchievements() {
         achievementsContent.appendChild(categoryDiv);
     });
 }
+
+// ADDED: New function to render unlocked secrets
+export function renderEasterEggs() {
+    const contentEl = document.getElementById('easter-eggs-content');
+    contentEl.innerHTML = '';
+
+    const unlockedSecretSkins = SKINS_DATA.filter(s => s.secret && gameState.ownedSkins.includes(s.id));
+
+    if (unlockedSecretSkins.length === 0) {
+        contentEl.innerHTML = '<p style="text-align: center; opacity: 0.8;">No secrets found yet. Keep exploring!</p>';
+        return;
+    }
+
+    unlockedSecretSkins.forEach(skin => {
+        const card = document.createElement('div');
+        card.className = 'achievement-card unlocked'; // Re-use styles
+        card.dataset.skinId = skin.id;
+
+        const isEquipped = gameState.currentSkin === skin.id;
+        const actionText = isEquipped ? 'Equipped' : 'Equip';
+
+        card.innerHTML = `
+            <img src="${skin.image}" alt="${skin.name}" class="achievement-card-icon">
+            <div class="achievement-card-text">
+                <h4>${skin.name}</h4>
+                <p>${skin.description}</p>
+            </div>
+            <button class="btn easter-egg-equip-btn" ${isEquipped ? 'disabled' : ''}>${actionText}</button>
+        `;
+        contentEl.appendChild(card);
+    });
+}
+
 
 export function showAchievement(title, desc) {
     document.getElementById('achievement-title').textContent = title;

@@ -33,12 +33,12 @@ export function buyUpgrade(id) {
             }
         });
 
-        // ADDED: This block updates the UI instantly after purchase.
+        // MODIFIED: This block now correctly handles word mode.
         const upgradeEl = document.querySelector(`.upgrade-item[data-id="${id}"]`);
         if (upgradeEl) {
             const ownedEl = upgradeEl.querySelector('.upgrade-owned');
             if (ownedEl) {
-                ownedEl.textContent = gameState.upgrades[id]?.owned || 0;
+                ownedEl.textContent = gameState.isWordMode ? gameState.wordModeText.owned : (gameState.upgrades[id]?.owned || 0);
             }
         }
     }

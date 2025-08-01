@@ -18,9 +18,9 @@ export const UPGRADES_DATA = [
     { id: 'singularity', name: 'The Singularity', description: 'Become one with the Nyanverse. The ultimate CPS upgrade.', type: 'click', baseCost: 2e12, power: 200000, costIncrease: 1.016 },
 ];
 
-// MODIFIED: Added secret "WORD." skin at the top of the array
 export const SKINS_DATA = [ 
-    { id: 'word', name: 'WORD.', rebirthUnlock: 0, secret: true, image: 'assets/cats/word-cat.png', trail: '', trailHeight: 0, bonus: { type: 'global', value: 1.25 }, description: 'A glitch in the system.' },
+    // MODIFIED: Updated description for the WORD skin.
+    { id: 'word', name: 'WORD.', rebirthUnlock: 0, secret: true, image: 'assets/cats/word-cat.png', trail: '', trailHeight: 0, bonus: { type: 'global', value: 1.25 }, description: 'type shift like right now 5 4 3 2 1' },
     { id: 'default', name: 'Classic Nyan', rebirthUnlock: 0, image: 'assets/cats/nyan-cat.png', trail: 'assets/cats/nyan-slice.png', trailHeight: 200, description: 'The original. The legend.' }, 
     { id: 'gb', name: 'GB Nyan', rebirthUnlock: 1, bonus: { type: 'global', value: 1.005 }, image: 'assets/cats/GB.png', trail: 'assets/cats/GB-slice.png', trailHeight: 200, description: 'Gaming in glorious 4 shades of green.' },
     { id: 'grumpy', name: 'Grumpy Nyan', rebirthUnlock: 1, bonus: { type: 'global', value: 1.005 }, image: 'assets/cats/grumpy.png', trail: 'assets/cats/grumpy-slice.png', trailHeight: 200, description: 'Hates clicking. Clicks anyway.' },
@@ -131,7 +131,6 @@ export const ACHIEVEMENTS_DATA = {
         'misc_dark_mode': { name: 'Hello Darkness', description: 'Check out the dark side.', condition: (gs) => gs.settings.theme === 'dark' },
         'misc_too_soon': { name: 'A Bit Ambitious', description: 'Try to rebirth before you can afford it.', condition: (gs) => gs.triedRebirthEarly },
         'misc_save_often': { name: 'Just In Case', description: 'The game has been saved.', condition: () => true },
-        // ADDED: Secret clickable achievement
         'misc_words_apart': { name: 'Words Apart', description: 'Sometimes you need to keep your wolds apart.', isClickable: true, condition: (gs) => (gs.upgrades['sprinkles']?.owned > 0 && !(gs.upgrades['lovebots']?.owned > 0) && gs.upgrades['rainbow_mice']?.owned > 0) },
     }
 };

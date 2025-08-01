@@ -8,6 +8,7 @@ export function getDefaultGameState() {
         rebirthPoints: 0,
         isRebirthing: false, 
         triedRebirthEarly: false, 
+        isWordMode: false, 
         
         purchaseMultiplierIndex: 0,
         upgrades: {},
@@ -16,7 +17,6 @@ export function getDefaultGameState() {
         currentSkin: 'default',
         unlockedAchievements: [],
         activeBoosts: {},
-        // MODIFIED: Separate volume controls for Music and SFX
         settings: { 
             musicVolume: 0.5, 
             sfxVolume: 0.8, 
@@ -29,7 +29,7 @@ export function getDefaultGameState() {
 }
 
 export const MULTIPLIERS = [1, 10, 50, 100, 'ALL'];
-export const BASE_REBIRTH_COST = 1e7; // 10 Million
+export const BASE_REBIRTH_COST = 1e7;
 
 export function T(newState) {
     Object.assign(gameState, newState);

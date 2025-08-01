@@ -28,6 +28,10 @@
 			<div id="achievements-tab" class="slide-tab">
 				<img src="assets/icons/trophy.png" alt="Achievements">
 			</div>
+            <!-- ADDED: Easter Eggs Tab -->
+            <div id="easter-eggs-tab" class="slide-tab">
+				<img src="assets/icons/egg.png" alt="Easter Eggs">
+			</div>
 			<div id="nyan-tree-tab" class="slide-tab">
 				<img src="assets/icons/tree.png" alt="Nyan Tree">
 			</div>
@@ -115,6 +119,17 @@
         </div>
     </div>
 
+    <!-- ADDED: Easter Egg Modal -->
+    <div id="easter-eggs-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal-x">×</span>
+            <h2>Secrets Found</h2>
+            <div id="easter-eggs-content">
+                <!-- Easter eggs will be generated here by JS -->
+            </div>
+        </div>
+    </div>
+
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal-x">×</span>
@@ -152,7 +167,6 @@
                         <button id="get-249-upgrades-cheat" class="btn">Get 249 of Each</button>
                         <button id="unlock-all-achievements-cheat" class="btn">Unlock Achievements</button>
                         <button id="max-nyan-tree-cheat" class="btn">Max Nyan Tree</button>
-                        <!-- ADDED: New cheat button for rebirths -->
                         <button id="add-rebirths-cheat" class="btn">Add 5 Rebirths</button>
                     </div>
                 </div>

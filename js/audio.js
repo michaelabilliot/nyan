@@ -1,11 +1,14 @@
 import { gameState } from './state.js';
 
 const audioSources = {
+    // Music
     main: 'assets/audio/main-music.mp3',
     nyanTree: 'assets/audio/nyantree-ambience.mp3',
+    // SFX
     click: 'assets/audio/nyan-click.mp3',
     upgradeBuy: 'assets/audio/upgrade-buy.mp3',
     skinBuy: 'assets/audio/skin-buy.mp3',
+    flash: 'assets/audio/flash.mp3', // ADDED: Sound for the secret transition
 };
 
 const audioElements = {};
@@ -15,7 +18,6 @@ function fadeAudio(audio, targetVolume, duration = 500, onComplete = null) {
     const startVolume = audio.volume;
     if (startVolume === targetVolume && audio.paused === false) return;
 
-    // Clear any existing fade interval for this audio element
     if (audio.fadeInterval) clearInterval(audio.fadeInterval);
 
     if (duration === 0) {
@@ -58,9 +60,10 @@ export function initAudio() {
 export function playSfx(key) {
     if (!gameState.settings.sfx || !audioElements[key]) return;
     const sfx = audioElements[key];
-    sfx.volume = gameState.settings.sfxVolume;
+    // MODIFIED: Use sfxVolume and check for valid number to prevent errors on old saves
+    sfx.volume = typeof gameState.settings.sfxVolume === 'number' ? gameState.settings.sfxVolume : 0.8;
     sfx.currentTime = 0;
-    sfx.play().catch(e => {});
+    sfx.play().catch(e => {}); // Suppress minor play errors
 }
 
 export function switchMusic(newKey, fadeDuration = 500) {
@@ -72,7 +75,8 @@ export function switchMusic(newKey, fadeDuration = 500) {
 
     if (gameState.settings.music && audioElements[newKey]) {
         const newMusic = audioElements[newKey];
-        const targetVolume = gameState.settings.musicVolume;
+        // MODIFIED: Use musicVolume and check for valid number
+        const targetVolume = typeof gameState.settings.musicVolume === 'number' ? gameState.settings.musicVolume : 0.5;
         newMusic.currentTime = 0;
         newMusic.volume = 0;
         newMusic.play().catch(e => {});
@@ -82,7 +86,8 @@ export function switchMusic(newKey, fadeDuration = 500) {
 
 export function updateMusicVolume() {
     if (currentMusicKey && gameState.settings.music) {
-        audioElements[currentMusicKey].volume = gameState.settings.musicVolume;
+        const targetVolume = typeof gameState.settings.musicVolume === 'number' ? gameState.settings.musicVolume : 0.5;
+        audioElements[currentMusicKey].volume = targetVolume;
     }
 }
 
@@ -90,7 +95,7 @@ export function setMusicEnabled(enabled) {
     if (!currentMusicKey || !audioElements[currentMusicKey]) return;
     const music = audioElements[currentMusicKey];
     if (enabled) {
-        const targetVolume = gameState.settings.musicVolume;
+        const targetVolume = typeof gameState.settings.musicVolume === 'number' ? gameState.settings.musicVolume : 0.5;
         music.play().catch(e => {});
         fadeAudio(music, targetVolume);
     } else {
@@ -107,7 +112,7 @@ export function pauseAllAudio() {
 export function resumeAllAudio() {
     if (currentMusicKey && gameState.settings.music) {
         const music = audioElements[currentMusicKey];
-        const targetVolume = gameState.settings.musicVolume;
+        const targetVolume = typeof gameState.settings.musicVolume === 'number' ? gameState.settings.musicVolume : 0.5;
         music.play().catch(e => {});
         fadeAudio(music, targetVolume, 200);
     }
