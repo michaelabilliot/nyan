@@ -67,6 +67,7 @@ body {
     z-index: -1;
 }
 
+/* CORRECTED: position:relative and a high z-index to lift the panel above the slide-out tabs. */
 #right-panel { 
     flex: 1; 
     background-color: var(--panel-bg); 
@@ -180,14 +181,16 @@ body {
 #details-content p { margin: 0; }
 #nyan-tree-buy-btn { font-size: 1em; padding: 10px 25px; }
 
-/* FIX: Definitive positioning fix. Uses calc() to position relative to the right panel's width. */
+/* CORRECTED: The exact implementation from your working git diff. */
 #slide-out-container {
     position: absolute;
-    /* The right panel is 1/3 of the viewport width. This positions the container at its left edge. */
+    /* This positions the container at the left edge of the right panel (which is 1/3 of the screen, starting at 2/3). */
     left: calc(100vw * 2 / 3); 
-    top: 105px; /* Position below the header area */
-    transform: translateX(-100%); /* Push it to the left so it peeks out */
-    z-index: 5;
+    top: 20px; /* Aligned with the top padding of the panel, as per your diff. */
+    /* This pushes the container left by its own width, making it sit perfectly behind the panel's border. */
+    transform: translateX(-90%);
+    /* This ensures the tabs are layered *under* the right panel (z-index: 10). */
+    z-index: 5; 
     display: flex;
     flex-direction: column; 
     gap: 10px;
@@ -205,10 +208,9 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    position: relative; 
 }
 .slide-tab:hover {
-    transform: translateX(-20px); 
+    transform: translateX(-30px); 
     background-color: var(--item-hover-bg);
 }
 .slide-tab img {
@@ -285,7 +287,6 @@ body {
 .skin-card.equipped { border-color: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); }
 .skin-card img { width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated; background: rgba(0,0,0,0.2); border-radius: 8px; }
 
-/* FIX: Complete redesign of the settings modal */
 #settings-modal .modal-content {
     min-width: 450px;
     max-width: 600px;

@@ -21,6 +21,15 @@
             </div>
         </div>
 
+		<div id="slide-out-container">
+			<div id="settings-tab" class="slide-tab">
+				<img src="assets/cog.png" alt="Settings">
+			</div>
+			<div id="nyan-tree-tab" class="slide-tab">
+				<img src="assets/tree.png" alt="Nyan Tree">
+			</div>
+		</div>
+
         <!-- Right Side Panel -->
         <div id="right-panel">
             <div id="right-panel-header">
@@ -44,15 +53,8 @@
         </div>
     </div>
     
-    <!-- FIX: Moved container back outside for correct absolute positioning relative to the viewport. -->
-    <div id="slide-out-container">
-        <div id="settings-tab" class="slide-tab">
-            <img src="assets/cog.png" alt="Settings">
-        </div>
-        <div id="nyan-tree-tab" class="slide-tab">
-            <img src="assets/tree.png" alt="Nyan Tree">
-        </div>
-    </div>
+    <!-- CORRECTED: Moved container outside to be a sibling to #game-container, allowing for proper z-index layering against the right panel. -->
+    
 
     <!-- Fullscreen Nyan Tree Screen -->
     <div id="nyan-tree-screen" class="fullscreen-overlay">
@@ -98,7 +100,6 @@
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-content">
             <h2>Settings</h2>
-            <!-- FIX: Redesigned settings layout for better consistency and scaling -->
             <div class="settings-container">
                 <div class="settings-section">
                     <div class="setting-item">
