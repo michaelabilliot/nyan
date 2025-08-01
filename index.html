@@ -28,6 +28,10 @@
 			<div id="nyan-tree-tab" class="slide-tab">
 				<img src="assets/tree.png" alt="Nyan Tree">
 			</div>
+			<!-- ADDED: Achievements Tab -->
+			<div id="achievements-tab" class="slide-tab">
+				<img src="assets/trophy.png" alt="Achievements">
+			</div>
 		</div>
 
         <!-- Right Side Panel -->
@@ -75,7 +79,17 @@
         </div>
     </div>
 
-
+	<div id="confirm-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="confirm-modal-title"></h2>
+            <p id="confirm-modal-message"></p>
+            <div class="modal-buttons">
+                <button id="confirm-modal-yes" class="btn">Yes</button>
+                <button id="confirm-modal-no" class="btn">No</button>
+                <button id="confirm-modal-ok" class="btn" style="display: none;">OK</button>
+            </div>
+        </div>
+    </div>
     <!-- Modals -->
     <div id="shop-modal" class="modal-overlay">
         <div class="modal-content">
@@ -85,15 +99,12 @@
         </div>
     </div>
 
-    <div id="confirm-modal" class="modal-overlay">
+    <!-- ADDED: Achievements Modal -->
+    <div id="achievements-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 id="confirm-modal-title"></h2>
-            <p id="confirm-modal-message"></p>
-            <div class="modal-buttons">
-                <button id="confirm-modal-yes" class="btn">Yes</button>
-                <button id="confirm-modal-no" class="btn">No</button>
-                <button id="confirm-modal-ok" class="btn" style="display: none;">OK</button>
-            </div>
+            <h2>Achievements</h2>
+            <div class="modal-grid" id="achievements-grid"></div>
+            <button class="btn close-modal-btn">Close</button>
         </div>
     </div>
 

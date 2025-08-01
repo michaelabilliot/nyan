@@ -1,6 +1,6 @@
 import { gameState, T } from './state.js';
 import { calculateTotalCPS, getGlobalMultiplier, getPurchaseMultiplier } from './core.js';
-import { UPGRADES_DATA, SKINS_DATA } from './data.js';
+import { UPGRADES_DATA, SKINS_DATA, ACHIEVEMENTS_DATA } from './data.js';
 import { buyUpgrade } from './upgrades.js';
 
 const coinCountEl = document.getElementById('coin-count');
@@ -15,6 +15,7 @@ const skinsGrid = document.getElementById('skins-grid');
 const achievementToast = document.getElementById('achievement-toast');
 const nyanTreeTab = document.getElementById('nyan-tree-tab');
 const settingsTab = document.getElementById('settings-tab');
+const achievementsGrid = document.getElementById('achievements-grid');
 
 export function updatePrestigeUI() {
     settingsTab.style.display = 'flex';
@@ -58,6 +59,7 @@ export function updateDisplay() {
     updatePrestigeUI();
 }
 
+// MODIFIED: This function now correctly calculates and displays the cost AND power for bulk purchases.
 export function updateUpgradeStyles() {
     const multiplier = getPurchaseMultiplier();
     const upgradeItems = upgradesListEl.children;
@@ -67,22 +69,30 @@ export function updateUpgradeStyles() {
         const upgrade = UPGRADES_DATA.find(u => u.id === upgradeId);
         if (!upgrade) continue;
         
-        // FIX: Calculate total cost based on whether multiplier is 'ALL' or a number.
         let totalCost;
-        let canAfford = false;
+        let canAfford;
+        let amountToBuy;
 
         if (multiplier === 'ALL') {
-            const affordableAmount = Math.floor(gameState.coins / upgrade.baseCost);
-            totalCost = affordableAmount * upgrade.baseCost;
-            canAfford = affordableAmount > 0;
+            amountToBuy = Math.floor(gameState.coins / upgrade.baseCost);
+            totalCost = amountToBuy * upgrade.baseCost;
+            canAfford = amountToBuy > 0;
         } else {
-            totalCost = upgrade.baseCost * multiplier;
+            amountToBuy = multiplier;
+            totalCost = upgrade.baseCost * amountToBuy;
             canAfford = gameState.coins >= totalCost;
         }
 
         const costEl = itemEl.querySelector('.upgrade-cost');
         if (costEl) {
             costEl.innerHTML = `Cost: ${formatNumber(totalCost)}`;
+        }
+
+        const powerEl = itemEl.querySelector('.upgrade-power');
+        if(powerEl){
+            const totalPower = upgrade.power * amountToBuy;
+            const powerType = upgrade.type === 'click' ? 'NPC' : 'CPS';
+            powerEl.innerHTML = `+${formatNumber(totalPower)} ${powerType}`;
         }
 
         if (canAfford) {
@@ -152,6 +162,33 @@ export function renderShop() {
             }
         });
         skinsGrid.appendChild(card);
+    });
+}
+
+// ADDED: Renders the achievement modal content.
+export function renderAchievements() {
+    achievementsGrid.innerHTML = '';
+    Object.keys(ACHIEVEMENTS_DATA).forEach(id => {
+        const achievement = ACHIEVEMENTS_DATA[id];
+        const card = document.createElement('div');
+        card.className = 'achievement-card';
+        
+        const isUnlocked = gameState.unlockedAchievements.includes(id);
+
+        if (isUnlocked) {
+            card.classList.add('unlocked');
+        } else {
+            card.classList.add('locked');
+        }
+
+        card.innerHTML = `
+            <div class="achievement-card-icon">🏆</div>
+            <div class="achievement-card-text">
+                <h4>${isUnlocked ? achievement.name : '??????'}</h4>
+                <p>${isUnlocked ? achievement.description : 'Keep playing to unlock!'}</p>
+            </div>
+        `;
+        achievementsGrid.appendChild(card);
     });
 }
 

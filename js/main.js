@@ -5,7 +5,7 @@ import {
     calculateClickPower, calculateTotalCPS, getRebirthCost
 } from './core.js';
 import {
-    updateDisplay, renderUpgrades, showAchievement, formatNumber, renderShop, updateUpgradeStyles
+    updateDisplay, renderUpgrades, showAchievement, formatNumber, renderShop, updateUpgradeStyles, renderAchievements
 } from './ui.js';
 import { renderNyanTree, setupNyanTreePanning } from './nyanTree.js';
 import { ACHIEVEMENTS_DATA, SKINS_DATA, PLANET_DATA } from './data.js';
@@ -52,6 +52,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const devModeCheats = document.getElementById('dev-mode-cheats');
     const addCoinsCheat = document.getElementById('add-coins-cheat');
     const addRebirthPointsCheat = document.getElementById('add-rebirth-points-cheat');
+    const achievementsTab = document.getElementById('achievements-tab');
+    const achievementsModal = document.getElementById('achievements-modal');
 
     let confirmCallback = null;
 
@@ -249,6 +251,11 @@ document.addEventListener('DOMContentLoaded', () => {
             showNyanTreeScreen();
         });
         settingsTab.addEventListener('click', () => { showModal(settingsModal); });
+        // ADDED: Listener for the new achievements tab.
+        achievementsTab.addEventListener('click', () => {
+            renderAchievements();
+            showModal(achievementsModal);
+        });
         document.querySelectorAll('.close-modal-btn').forEach(btn => btn.addEventListener('click', (e) => hideModal(e.target.closest('.modal-overlay'))));
         
         confirmModalYes.addEventListener('click', () => { if (confirmCallback) confirmCallback(true); hideModal(confirmModal); });
