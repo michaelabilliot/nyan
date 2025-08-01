@@ -18,30 +18,32 @@ export const UPGRADES_DATA = [
     { id: 'singularity', name: 'The Singularity', description: 'Become one with the Nyanverse. The ultimate CPS upgrade.', type: 'click', baseCost: 2e12, power: 200000, costIncrease: 1.016 },
 ];
 
-// MODIFIED: Added all new skins with updated paths and a special trail type for pirate.
+// MODIFIED: Added secret "WORD." skin at the top of the array
 export const SKINS_DATA = [ 
-    { id: 'default', name: 'Classic Nyan', cost: 0, image: 'assets/cats/nyan-cat.png', trail: 'assets/cats/nyan-slice.png', trailHeight: 200, description: 'The original. The legend.' }, 
-    { id: 'gb', name: 'GB Nyan', cost: 500000, image: 'assets/cats/GB.png', trail: 'assets/cats/GB-slice.png', trailHeight: 200, description: 'Gaming in glorious 4 shades of green.' },
-    { id: 'grumpy', name: 'Grumpy Nyan', cost: 750000, image: 'assets/cats/grumpy.png', trail: 'assets/cats/grumpy-slice.png', trailHeight: 200, description: 'Hates clicking. Clicks anyway.' },
-    { id: 'jacksnyan', name: 'Jacks Nyan', cost: 1e6, image: 'assets/cats/jacksnyan.png', trail: 'assets/cats/jacksnyan-slice.png', trailHeight: 200, description: 'A spooky, pumpkin-headed Nyan.' },
-    { id: 'jazz', name: 'Jazz Nyan', cost: 1.2e6, image: 'assets/cats/jazz.png', trail: 'assets/cats/jazz-slice.png', trailHeight: 200, description: 'A blast from the past, straight from the 90s.' },
-    { id: 'mexinyan', name: 'Mexi Nyan', cost: 1.5e6, image: 'assets/cats/mexinyan.png', trail: 'assets/cats/mexinyan-slice.png', trailHeight: 200, description: '¡Fiesta en el espacio!' },
-    { id: 'mummy', name: 'Mummy Nyan', cost: 2e6, image: 'assets/cats/mummy.png', trail: 'assets/cats/mummy-slice.png', trailHeight: 200, description: 'Wrapped up and ready for an ancient journey.' },
-    { id: 'nyandoge', name: 'Nyan Doge', cost: 5e6, image: 'assets/cats/nyandoge.png', trail: 'assets/cats/nyandoge-slice.png', trailHeight: 200, description: 'Such cat. Much space. Wow.' },
-    { id: 'nyaninja', name: 'Nyaninja', cost: 4e6, image: 'assets/cats/nyaninja.png', trail: 'assets/cats/nyaninja-slice.png', trailHeight: 200, description: 'Silent, deadly, and adorable.' },
-    { id: 'paddy', name: 'Paddy Nyan', cost: 2.5e6, image: 'assets/cats/paddy.png', trail: 'assets/cats/paddy-slice.png', trailHeight: 200, description: 'A lucky charm for your clicking adventure.' },
-    { id: 'pikanyan', name: 'Pikanyan', cost: 8e6, image: 'assets/cats/pikanyan.png', trail: 'assets/cats/pikanyan-slice.png', trailHeight: 200, description: 'I choose you, Nyan Cat!' },
-    { id: 'pirate', name: 'Pirate Nyan', cost: 1e7, image: 'assets/cats/pirate.png', trail: 'assets/cats/pirate-slice.png', trailHeight: 200, description: 'Sails the cosmic seas for booty.', trailAnimation: 'scroll' },
-    { id: 'pumpkin', name: 'Pumpkin Nyan', cost: 1.1e6, image: 'assets/cats/pumpkin.png', trail: 'assets/cats/pumpkin-slice.png', trailHeight: 200, description: 'It\'s always Halloween in space.' },
-    { id: 'pusheen', name: 'Pusheen Cat', cost: 2.5e7, image: 'assets/cats/pusheen-cat.png', trail: 'assets/cats/pusheen-slice.png', trailHeight: 200, description: 'The famous cartoon cat takes to the stars.' },
-    { id: 'rasta', name: 'Rasta Nyan', cost: 3e6, image: 'assets/cats/rasta.png', trail: 'assets/cats/rasta-slice.png', trailHeight: 200, description: 'Yeah mon, keep on clickin\'.' },
-    { id: 'retro', name: 'Retro Nyan', cost: 4.5e6, image: 'assets/cats/retro.png', trail: 'assets/cats/retro-slice.png', trailHeight: 200, description: 'An 8-bit cat for an 8-bit world.' },
-    { id: 'sadnyan', name: 'Sad Nyan', cost: 1e6, image: 'assets/cats/sadnyan.png', trail: 'assets/cats/sadnyan-slice.png', trailHeight: 200, description: 'Maybe more coins will cheer him up?' },
-    { id: 'technyan', name: 'Techno Nyan', cost: 1.5e7, image: 'assets/cats/technyan.png', trail: 'assets/cats/technyan-slice.png', trailHeight: 200, description: 'Rave on, little poptart cat.' },
-    { id: 'uhmurica', name: 'Uhmurica Nyan', cost: 1.776e7, image: 'assets/cats/uhmurica.png', trail: 'assets/cats/uhmurica-slice.png', trailHeight: 200, description: 'Spreading freedom one rainbow at a time.' },
-    { id: 'vday', name: 'V-Day Nyan', cost: 2.14e6, image: 'assets/cats/vday.png', trail: 'assets/cats/vday-slice.png', trailHeight: 200, description: 'Spreading love across the galaxy.' },
-    { id: 'zombie', name: 'Zombie Nyan', cost: 2.8e6, image: 'assets/cats/zombie.png', trail: 'assets/cats/zombie-slice.png', trailHeight: 200, description: 'Braaaains... and poptarts.' },
-    { id: 'hd', name: 'HD Nyan', cost: 1e9, image: 'assets/cats/hd-nyan-cat.png', trail: 'assets/cats/hd-nyan-slice.png', trailHeight: 200, description: 'Experience Nyan Cat in glorious high definition.' },
+    { id: 'word', name: 'WORD.', rebirthUnlock: 0, secret: true, image: 'assets/cats/word-cat.png', trail: '', trailHeight: 0, bonus: { type: 'global', value: 1.25 }, description: 'A glitch in the system.' },
+    { id: 'default', name: 'Classic Nyan', rebirthUnlock: 0, image: 'assets/cats/nyan-cat.png', trail: 'assets/cats/nyan-slice.png', trailHeight: 200, description: 'The original. The legend.' }, 
+    { id: 'gb', name: 'GB Nyan', rebirthUnlock: 1, bonus: { type: 'global', value: 1.005 }, image: 'assets/cats/GB.png', trail: 'assets/cats/GB-slice.png', trailHeight: 200, description: 'Gaming in glorious 4 shades of green.' },
+    { id: 'grumpy', name: 'Grumpy Nyan', rebirthUnlock: 1, bonus: { type: 'global', value: 1.005 }, image: 'assets/cats/grumpy.png', trail: 'assets/cats/grumpy-slice.png', trailHeight: 200, description: 'Hates clicking. Clicks anyway.' },
+    { id: 'jacksnyan', name: 'Jacks Nyan', rebirthUnlock: 1, bonus: { type: 'global', value: 1.005 }, image: 'assets/cats/jacksnyan.png', trail: 'assets/cats/jacksnyan-slice.png', trailHeight: 200, description: 'A spooky, pumpkin-headed Nyan.' },
+    { id: 'jazz', name: 'Jazz Nyan', rebirthUnlock: 2, bonus: { type: 'global', value: 1.01 }, image: 'assets/cats/jazz.png', trail: 'assets/cats/jazz-slice.png', trailHeight: 200, description: 'A blast from the past, straight from the 90s.' },
+    { id: 'mexinyan', name: 'Mexi Nyan', rebirthUnlock: 2, bonus: { type: 'global', value: 1.01 }, image: 'assets/cats/mexinyan.png', trail: 'assets/cats/mexinyan-slice.png', trailHeight: 200, description: '¡Fiesta en el espacio!' },
+    { id: 'mummy', name: 'Mummy Nyan', rebirthUnlock: 2, bonus: { type: 'global', value: 1.01 }, image: 'assets/cats/mummy.png', trail: 'assets/cats/mummy-slice.png', trailHeight: 200, description: 'Wrapped up and ready for an ancient journey.' },
+    { id: 'nyandoge', name: 'Nyan Doge', rebirthUnlock: 3, bonus: { type: 'global', value: 1.015 }, image: 'assets/cats/nyandoge.png', trail: 'assets/cats/nyandoge-slice.png', trailHeight: 200, description: 'Such cat. Much space. Wow.' },
+    { id: 'nyaninja', name: 'Nyaninja', rebirthUnlock: 3, bonus: { type: 'global', value: 1.015 }, image: 'assets/cats/nyaninja.png', trail: 'assets/cats/nyaninja-slice.png', trailHeight: 200, description: 'Silent, deadly, and adorable.' },
+    { id: 'paddy', name: 'Paddy Nyan', rebirthUnlock: 3, bonus: { type: 'global', value: 1.015 }, image: 'assets/cats/paddy.png', trail: 'assets/cats/paddy-slice.png', trailHeight: 200, description: 'A lucky charm for your clicking adventure.' },
+    { id: 'pikanyan', name: 'Pikanyan', rebirthUnlock: 4, bonus: { type: 'global', value: 1.02 }, image: 'assets/cats/pikanyan.png', trail: 'assets/cats/pikanyan-slice.png', trailHeight: 200, description: 'I choose you, Nyan Cat!' },
+    { id: 'pirate', name: 'Pirate Nyan', rebirthUnlock: 4, bonus: { type: 'global', value: 1.02 }, image: 'assets/cats/pirate.png', trail: 'assets/cats/pirate-slice.png', trailHeight: 200, description: 'Sails the cosmic seas for booty.', trailAnimation: 'scroll' },
+    { id: 'pumpkin', name: 'Pumpkin Nyan', rebirthUnlock: 4, bonus: { type: 'global', value: 1.02 }, image: 'assets/cats/pumpkin.png', trail: 'assets/cats/pumpkin-slice.png', trailHeight: 200, description: 'It\'s always Halloween in space.' },
+    { id: 'pusheen', name: 'Pusheen Cat', rebirthUnlock: 5, bonus: { type: 'global', value: 1.025 }, image: 'assets/cats/pusheen-cat.png', trail: 'assets/cats/pusheen-slice.png', trailHeight: 200, description: 'The famous cartoon cat takes to the stars.' },
+    { id: 'rasta', name: 'Rasta Nyan', rebirthUnlock: 5, bonus: { type: 'global', value: 1.025 }, image: 'assets/cats/rasta.png', trail: 'assets/cats/rasta-slice.png', trailHeight: 200, description: 'Yeah mon, keep on clickin\'.' },
+    { id: 'retro', name: 'Retro Nyan', rebirthUnlock: 5, bonus: { type: 'global', value: 1.025 }, image: 'assets/cats/retro.png', trail: 'assets/cats/retro-slice.png', trailHeight: 200, description: 'An 8-bit cat for an 8-bit world.' },
+    { id: 'sadnyan', name: 'Sad Nyan', rebirthUnlock: 6, bonus: { type: 'global', value: 1.03 }, image: 'assets/cats/sadnyan.png', trail: 'assets/cats/sadnyan-slice.png', trailHeight: 200, description: 'Maybe more coins will cheer him up?' },
+    { id: 'technyan', name: 'Techno Nyan', rebirthUnlock: 6, bonus: { type: 'global', value: 1.03 }, image: 'assets/cats/technyan.png', trail: 'assets/cats/technyan-slice.png', trailHeight: 200, description: 'Rave on, little poptart cat.' },
+    { id: 'uhmurica', name: 'Uhmurica Nyan', rebirthUnlock: 6, bonus: { type: 'global', value: 1.03 }, image: 'assets/cats/uhmurica.png', trail: 'assets/cats/uhmurica-slice.png', trailHeight: 200, description: 'Spreading freedom one rainbow at a time.' },
+    { id: 'vday', name: 'V-Day Nyan', rebirthUnlock: 7, bonus: { type: 'global', value: 1.035 }, image: 'assets/cats/vday.png', trail: 'assets/cats/vday-slice.png', trailHeight: 200, description: 'Spreading love across the galaxy.' },
+    { id: 'zombie', name: 'Zombie Nyan', rebirthUnlock: 7, bonus: { type: 'global', value: 1.035 }, image: 'assets/cats/zombie.png', trail: 'assets/cats/zombie-slice.png', trailHeight: 200, description: 'Braaaains... and poptarts.' },
+    { id: 'hd', name: 'HD Nyan', secretName: '??? Cat', rebirthUnlock: 8, bonus: { type: 'global', value: 1.05 }, image: 'assets/cats/hd-nyan-cat.png', trail: 'assets/cats/hd-nyan-slice.png', trailHeight: 200, description: 'Experience Nyan Cat in glorious high definition.' },
+    { id: 'tacnayn', name: 'Tac Nayn', secretName: '???', rebirthUnlock: 9, bonus: { type: 'global', value: 1.10 }, image: 'assets/cats/tacnayn.png', trail: 'assets/cats/tacnayn-slice.png', trailHeight: 200, description: 'The antithesis of Nyan. Waffles, hate, and despair.', action: 'fight' },
 ];
 
 const checkAllInCategory = (gs, category) => Object.keys(ACHIEVEMENTS_DATA[category]).every(id => gs.unlockedAchievements.includes(id));
@@ -115,7 +117,7 @@ export const ACHIEVEMENTS_DATA = {
         'tree_nodes_25': { name: 'Full Canopy', description: 'Purchase 25 total node levels in the Nyan Tree.', condition: (gs) => Object.values(gs.nyanTreeUpgrades).reduce((a, b) => a + b, 0) >= 25 },
     },
     Collection: {
-        'skins_all': { name: 'Fashionista', description: 'Own every skin.', condition: (gs) => SKINS_DATA.every(skin => skin.cost === 0 || gs.ownedSkins.includes(skin.id)) },
+        'skins_all': { name: 'Fashionista', description: 'Own every skin.', condition: (gs) => SKINS_DATA.every(skin => skin.rebirthUnlock === 0 || gs.ownedSkins.includes(skin.id)) },
     },
     Mastery: {
         'achieve_10': { name: 'Getting Started', description: 'Unlock 10 achievements.', condition: (gs) => gs.unlockedAchievements.length >= 10 },
@@ -129,6 +131,8 @@ export const ACHIEVEMENTS_DATA = {
         'misc_dark_mode': { name: 'Hello Darkness', description: 'Check out the dark side.', condition: (gs) => gs.settings.theme === 'dark' },
         'misc_too_soon': { name: 'A Bit Ambitious', description: 'Try to rebirth before you can afford it.', condition: (gs) => gs.triedRebirthEarly },
         'misc_save_often': { name: 'Just In Case', description: 'The game has been saved.', condition: () => true },
+        // ADDED: Secret clickable achievement
+        'misc_words_apart': { name: 'Words Apart', description: 'Sometimes you need to keep your wolds apart.', isClickable: true, condition: (gs) => (gs.upgrades['sprinkles']?.owned > 0 && !(gs.upgrades['lovebots']?.owned > 0) && gs.upgrades['rainbow_mice']?.owned > 0) },
     }
 };
 

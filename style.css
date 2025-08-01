@@ -102,6 +102,7 @@ body {
     flex-direction: column; 
     position: relative; 
     z-index: 10; 
+    transition: opacity 0.5s ease-out;
 }
 
 #stats-display h1 .decimal-part, #stats-display h1 .suffix-part { font-size: 0.6em; }
@@ -213,6 +214,7 @@ body {
     display: flex;
     flex-direction: column; 
     gap: 10px;
+    transition: opacity 0.5s ease-out; /* MODIFIED */
 }
 .slide-tab {
     background-color: var(--panel-bg);
@@ -239,13 +241,13 @@ body {
 }
 
 #main-area { flex: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
-#stats-display { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); text-align: center; text-shadow: 3px 3px 6px rgba(0,0,0,0.7); z-index: 100; }
+#stats-display { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); text-align: center; text-shadow: 3px 3px 6px rgba(0,0,0,0.7); z-index: 100; transition: opacity 0.5s ease-out;}
 #stats-display h1 { font-size: 5em; margin: 0; font-family: 'Press Start 2P', cursive; color: #fff; }
 #stats-display p { font-size: 1.8em; margin-top: 10px; color: #eee; }
-#nyan-cat-container { position: relative; z-index: 10; }
+#nyan-cat-container { position: relative; z-index: 10; transition: opacity 0.5s ease-out;}
 #nyan-cat-image { width: 450px; cursor: pointer; transition: transform 0.1s ease; position: relative; image-rendering: pixelated; }
 #nyan-cat-image:active { transform: scale(1.1); }
-#rainbow-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
+#rainbow-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; transition: opacity 0.5s ease-out; } /* MODIFIED */
 .rainbow-particle { position: absolute; width: 30px; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
 .rainbow-particle-scrolling {
     background-repeat: repeat-y;
@@ -362,58 +364,119 @@ body {
 #achievement-icon { font-size: 2.5em; }
 #achievement-title { font-weight: bold; }
 
-/* MODIFIED: Shop Grid Styles */
-#shop-modal .modal-content { max-width: 900px; }
-#skins-grid-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-    gap: 15px;
-    max-height: 60vh;
-    overflow-y: auto;
-    padding: 15px;
-    margin-bottom: 15px;
-    scrollbar-width: none;
-}
-#skins-grid-container::-webkit-scrollbar { display: none; }
-
-.skin-grid-card {
-    background-color: var(--item-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 15px;
-    padding: 10px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-    opacity: 0.7;
+#shop-modal .modal-content { max-width: 900px; display: flex; flex-direction: column; }
+#skin-carousel-viewport {
+    width: 100%;
+    height: 150px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     position: relative;
+    overflow: hidden;
+    margin-bottom: 15px;
 }
-.skin-grid-card:hover {
+#skin-carousel-track {
+    display: flex;
+    align-items: center;
+    position: absolute;
+    left: 50%;
+    transition: transform 0.4s ease-out;
+}
+.skin-carousel-item {
+    position: relative;
+    width: 120px;
+    margin: 0 15px;
+    transition: transform 0.4s ease-out, opacity 0.4s ease-out;
+    cursor: pointer;
+    opacity: 0.5;
+    transform: scale(0.7);
+}
+.skin-carousel-item.active {
     opacity: 1;
-    transform: scale(1.05);
-    border-color: var(--accent-yellow);
+    transform: scale(1.1);
 }
-.skin-grid-card.selected {
-    opacity: 1;
-    border-color: var(--accent-cyan);
-    box-shadow: 0 0 15px var(--accent-cyan);
-}
-.skin-grid-card.equipped {
-    opacity: 1;
-    border-color: var(--accent-green);
-    box-shadow: 0 0 15px var(--accent-green);
-}
-.skin-grid-card-img {
-    width: 100px;
-    height: 100px;
+.skin-carousel-item .skin-image {
+    width: 100%;
+    height: auto;
     object-fit: contain;
     image-rendering: pixelated;
-    margin-bottom: 5px;
+    pointer-events: none;
+    transition: filter 0.3s ease-out;
 }
-.skin-grid-card h4 {
+
+.skin-carousel-item.locked .skin-image {
+    filter: brightness(0);
+}
+.skin-carousel-item.locked {
+    opacity: 0.5 !important;
+}
+.skin-carousel-item.locked.active {
+    transform: scale(1.0) !important;
+}
+
+.lock-icon-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 45px;
+    height: 45px;
+    z-index: 5;
+    pointer-events: none;
+    filter: invert(1) drop-shadow(0px 1px 4px rgba(0, 0, 0, 0.8));
+}
+
+#skin-details-panel {
+    text-align: center;
+    height: 110px;
+    margin-bottom: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+#skin-details-panel h4 {
+    font-size: 1.8em;
+    color: var(--accent-yellow);
+    margin: 0 0 10px 0;
+}
+#skin-details-panel p {
     margin: 0;
-    font-size: 1em;
-    color: var(--text-light);
+    min-height: 20px;
 }
+.skin-carousel-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px; background-color: var(--item-hover-bg); border: 2px solid var(--border-color); border-radius: 50%; cursor: pointer; z-index: 20; font-size: 1.5em; display: flex; justify-content: center; align-items: center; }
+.skin-carousel-nav:hover { background-color: var(--panel-bg); }
+#skin-nav-left { left: 15%; }
+#skin-nav-right { right: 15%; }
 
 #shop-actions { display: flex; justify-content: center; gap: 15px; width: 100%; }
 #shop-actions .btn { min-width: 180px; }
+
+#transition-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 2000;
+    transition: opacity 1s ease-in-out;
+}
+#transition-overlay.active {
+    opacity: 1;
+}
+
+.fade-out {
+    opacity: 0 !important;
+}
+.fade-in {
+    opacity: 1 !important;
+}
+
+#nyan-tree-screen #nyan-tree-header,
+#nyan-tree-screen #nyan-tree-wrapper,
+#nyan-tree-screen #nyan-tree-footer {
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out; /* Slower fade for dramatic effect */
+}

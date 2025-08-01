@@ -16,7 +16,15 @@ export function getDefaultGameState() {
         currentSkin: 'default',
         unlockedAchievements: [],
         activeBoosts: {},
-        settings: { volume: 0.5, sfx: true, music: true, devMode: false, theme: 'light' },
+        // MODIFIED: Separate volume controls for Music and SFX
+        settings: { 
+            musicVolume: 0.5, 
+            sfxVolume: 0.8, 
+            sfx: true, 
+            music: true, 
+            devMode: false, 
+            theme: 'light' 
+        },
     };
 }
 

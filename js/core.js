@@ -1,5 +1,7 @@
+// core.js
+
 import { gameState, MULTIPLIERS, BASE_REBIRTH_COST } from './state.js';
-import { UPGRADES_DATA } from './data.js';
+import { UPGRADES_DATA, SKINS_DATA } from './data.js';
 
 export function getRebirthCost() {
     return BASE_REBIRTH_COST * Math.pow(1.5, gameState.rebirths);
@@ -16,6 +18,14 @@ export function getGlobalMultiplier(gs) {
     if (gs.nyanTreeUpgrades['unique_path_4b']) {
         totalMultiplier += (gs.unlockedAchievements.length * 0.01);
     }
+    
+    // MODIFIED: Add passive bonuses from all owned skins
+    SKINS_DATA.forEach(skin => {
+        if (gs.ownedSkins.includes(skin.id) && skin.bonus) {
+            totalMultiplier += (skin.bonus.value - 1);
+        }
+    });
+
     return totalMultiplier;
 }
 
@@ -73,4 +83,4 @@ export function getBuildingCostDiscount() {
         return 1 - (discountLevel * 0.02);
     }
     return 1;
-}	
+}

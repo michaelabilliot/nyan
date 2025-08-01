@@ -87,13 +87,19 @@
             </div>
         </div>
     </div>
-    <!-- MODIFIED: Shop Modal rebuilt for grid layout -->
     <div id="shop-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal-x">×</span>
             <h2>Skins & Boosts</h2>
-            <div id="skins-grid-container">
-                <!-- Skin cards will be generated here by JS -->
+            <div id="skin-carousel-viewport">
+                <div id="skin-carousel-track">
+                    <!-- Skin items will be generated here by JS -->
+                </div>
+                <div id="skin-nav-left" class="skin-carousel-nav">‹</div>
+                <div id="skin-nav-right" class="skin-carousel-nav">›</div>
+            </div>
+             <div id="skin-details-panel">
+                <!-- Skin details will be generated here by JS -->
             </div>
             <div id="shop-actions">
                 <button id="shop-buy-btn" class="btn">Equip</button>
@@ -116,16 +122,14 @@
             <div class="settings-container">
                 <div class="settings-section">
                     <div class="setting-item">
-                        <label for="volume-slider">Volume</label>
-                        <input type="range" id="volume-slider" min="0" max="100" value="50">
-                    </div>
-                    <div class="setting-item">
-                        <label for="sfx-toggle">SFX</label>
-                        <input type="checkbox" id="sfx-toggle" checked>
-                    </div>
-                    <div class="setting-item">
-                        <label for="music-toggle">Music</label>
+                        <label for="music-volume-slider">Music Volume</label>
+                        <input type="range" id="music-volume-slider" min="0" max="100" value="50">
                         <input type="checkbox" id="music-toggle" checked>
+                    </div>
+                    <div class="setting-item">
+                        <label for="sfx-volume-slider">SFX Volume</label>
+                        <input type="range" id="sfx-volume-slider" min="0" max="100" value="80">
+                        <input type="checkbox" id="sfx-toggle" checked>
                     </div>
                 </div>
                  <div class="settings-section">
@@ -148,6 +152,8 @@
                         <button id="get-249-upgrades-cheat" class="btn">Get 249 of Each</button>
                         <button id="unlock-all-achievements-cheat" class="btn">Unlock Achievements</button>
                         <button id="max-nyan-tree-cheat" class="btn">Max Nyan Tree</button>
+                        <!-- ADDED: New cheat button for rebirths -->
+                        <button id="add-rebirths-cheat" class="btn">Add 5 Rebirths</button>
                     </div>
                 </div>
             </div>
@@ -164,6 +170,8 @@
             <div id="achievement-desc">You did something amazing!</div>
         </div>
     </div>
+
+    <div id="transition-overlay"></div>
 
     <script type="module" src="js/main.js"></script>
 </body>

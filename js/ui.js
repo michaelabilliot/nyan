@@ -3,6 +3,7 @@ import { calculateTotalCPS, getGlobalMultiplier, getPurchaseMultiplier } from '.
 import { UPGRADES_DATA, SKINS_DATA, ACHIEVEMENTS_DATA } from './data.js';
 import { buyUpgrade } from './upgrades.js';
 import { calculateCostForAmount, calculateMaxAffordable } from './utils.js';
+import { playSfx } from './audio.js';
 
 const coinCountEl = document.getElementById('coin-count');
 const cpsCountEl = document.getElementById('cps-count');
@@ -17,9 +18,11 @@ const nyanTreeTab = document.getElementById('nyan-tree-tab');
 const settingsTab = document.getElementById('settings-tab');
 const achievementsContent = document.getElementById('achievements-content');
 const shopBuyBtn = document.getElementById('shop-buy-btn');
-const skinsGridContainer = document.getElementById('skins-grid-container');
+const skinCarouselTrack = document.getElementById('skin-carousel-track');
+const skinDetailsPanel = document.getElementById('skin-details-panel');
 
-let selectedSkinIdInShop = null;
+
+let currentSkinIndex = 0;
 
 export function updatePrestigeUI() {
     settingsTab.style.display = 'flex';
@@ -135,74 +138,103 @@ export function renderUpgrades() {
     updateUpgradeStyles();
 }
 
-//--- NEW SHOP GRID LOGIC ---//
-function updateShopButtons() {
-    const selectedSkin = SKINS_DATA.find(s => s.id === selectedSkinIdInShop);
+function updateCarouselDisplay() {
+    const items = document.querySelectorAll('.skin-carousel-item');
+    if (items.length === 0) return;
+
+    const itemWidth = items[0].offsetWidth;
+    const margin = parseInt(window.getComputedStyle(items[0]).marginRight) * 2;
+    const totalItemWidth = itemWidth + margin;
+    const offset = -(currentSkinIndex * totalItemWidth) - (totalItemWidth / 2);
+    skinCarouselTrack.style.transform = `translateX(${offset}px)`;
+    
+    items.forEach((item, index) => {
+        item.classList.toggle('active', index === currentSkinIndex);
+    });
+    
+    updateShopDetailsAndButton();
+}
+
+function updateShopDetailsAndButton() {
+    const selectedSkin = SKINS_DATA[currentSkinIndex];
     if (!selectedSkin) return;
 
-    const isOwned = gameState.ownedSkins.includes(selectedSkin.id);
+    const isUnlocked = gameState.rebirths >= selectedSkin.rebirthUnlock;
     const isEquipped = gameState.currentSkin === selectedSkin.id;
+    const displayName = !isUnlocked && selectedSkin.secretName ? selectedSkin.secretName : selectedSkin.name;
+
+    skinDetailsPanel.innerHTML = `
+        <h4>${displayName}</h4>
+        <p>${isUnlocked ? selectedSkin.description : '???'}</p>
+        ${isUnlocked && selectedSkin.bonus ? `<p><b>Passive Bonus:</b> +${((selectedSkin.bonus.value - 1) * 100).toFixed(1)}% Global Multiplier</p>` : ''}
+        ${!isUnlocked ? `<p>Requires ${selectedSkin.rebirthUnlock} Rebirths to unlock.</p>` : ''}
+        <p style="font-size: 0.8em; opacity: 0.7;">(Bonuses from all unlocked skins are always active)</p>
+    `;
 
     if (isEquipped) {
         shopBuyBtn.innerHTML = 'Equipped';
         shopBuyBtn.disabled = true;
-    } else if (isOwned) {
-        shopBuyBtn.innerHTML = 'Equip';
+    } else if (isUnlocked) {
+        shopBuyBtn.innerHTML = selectedSkin.action === 'fight' ? 'Fight?' : 'Equip';
         shopBuyBtn.disabled = false;
     } else {
-        shopBuyBtn.innerHTML = `Buy (${formatNumber(selectedSkin.cost)})`;
-        shopBuyBtn.disabled = gameState.coins < selectedSkin.cost;
+        shopBuyBtn.innerHTML = selectedSkin.secretName ? '???' : `Locked`;
+        shopBuyBtn.disabled = true;
     }
+}
+
+export function navigateCarousel(direction) {
+    currentSkinIndex = (currentSkinIndex + direction + SKINS_DATA.length) % SKINS_DATA.length;
+    updateCarouselDisplay();
 }
 
 export function handleShopAction() {
-    const selectedSkin = SKINS_DATA.find(s => s.id === selectedSkinIdInShop);
+    const selectedSkin = SKINS_DATA[currentSkinIndex];
     if (!selectedSkin) return;
 
-    if (gameState.ownedSkins.includes(selectedSkin.id)) {
-        T({ currentSkin: selectedSkin.id });
-    } else if (gameState.coins >= selectedSkin.cost) {
-        T({
-            coins: gameState.coins - selectedSkin.cost,
-            ownedSkins: [...gameState.ownedSkins, selectedSkin.id],
-            currentSkin: selectedSkin.id
-        });
+    const isUnlocked = gameState.rebirths >= selectedSkin.rebirthUnlock;
+
+    if (isUnlocked && gameState.currentSkin !== selectedSkin.id) {
+        if (selectedSkin.action === 'fight') {
+            // Placeholder for future fight mechanic
+            alert("The fight is not yet ready.");
+        } else {
+            playSfx('skinBuy');
+            T({ currentSkin: selectedSkin.id });
+        }
     }
-    renderShop(); // Re-render to update equipped status
+    
+    updateShopDetailsAndButton();
 }
 
 export function renderShop() {
-    skinsGridContainer.innerHTML = '';
-    selectedSkinIdInShop = gameState.currentSkin;
-
-    SKINS_DATA.forEach(skin => {
-        const card = document.createElement('div');
-        card.className = 'skin-grid-card';
-        card.dataset.id = skin.id;
-
-        if (skin.id === gameState.currentSkin) {
-            card.classList.add('equipped');
+    skinCarouselTrack.innerHTML = '';
+    SKINS_DATA.forEach((skin, index) => {
+        const item = document.createElement('div');
+        item.className = 'skin-carousel-item';
+        item.dataset.index = index;
+        
+        const isUnlocked = gameState.rebirths >= skin.rebirthUnlock;
+        
+        let innerHTML = `<img src="${skin.image}" alt="${skin.name}" class="skin-image">`;
+        if (!isUnlocked) {
+            item.classList.add('locked');
+            innerHTML += `<img src="assets/icons/lock.png" alt="Locked" class="lock-icon-overlay">`;
         }
-        if (skin.id === selectedSkinIdInShop) {
-            card.classList.add('selected');
-        }
+        item.innerHTML = innerHTML;
 
-        card.innerHTML = `
-            <img src="${skin.image}" alt="${skin.name}" class="skin-grid-card-img">
-            <h4>${skin.name}</h4>
-        `;
-
-        card.addEventListener('click', () => {
-            selectedSkinIdInShop = skin.id;
-            document.querySelectorAll('.skin-grid-card').forEach(c => c.classList.remove('selected'));
-            card.classList.add('selected');
-            updateShopButtons();
+        item.addEventListener('click', () => {
+            currentSkinIndex = index;
+            updateCarouselDisplay();
         });
 
-        skinsGridContainer.appendChild(card);
+        skinCarouselTrack.appendChild(item);
     });
+    
+    currentSkinIndex = SKINS_DATA.findIndex(s => s.id === gameState.currentSkin);
+    if (currentSkinIndex === -1) currentSkinIndex = 0;
 
-    updateShopButtons();
+    setTimeout(updateCarouselDisplay, 0);
 }
 
 

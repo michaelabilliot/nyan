@@ -1,5 +1,6 @@
 import { gameState, T } from './state.js';
 import { NYAN_TREE_UPGRADES } from './data.js';
+import { playSfx } from './audio.js';
 
 let selectedNode = null;
 
@@ -38,11 +39,12 @@ export function setupNyanTreePanning() {
 
 
 function buyNyanTreeUpgrade(upgrade) {
-    if (!upgrade || !gameState.isRebirthing) return; // FIX: Prevent buying if not in rebirth mode.
+    if (!upgrade || !gameState.isRebirthing) return;
     const ownedLevel = gameState.nyanTreeUpgrades[upgrade.id] || 0;
     const isMaxLevel = ownedLevel >= upgrade.maxLevel;
 
     if (gameState.rebirthPoints >= upgrade.cost && !isMaxLevel) {
+        playSfx('upgradeBuy');
         T({
             ...gameState,
             rebirthPoints: gameState.rebirthPoints - upgrade.cost,
@@ -74,7 +76,6 @@ function selectNode(upgrade) {
     const canAfford = gameState.rebirthPoints >= upgrade.cost;
     const isMaxed = ownedLevel >= upgrade.maxLevel;
 
-    // FIX: Only show the buy button if the player is in the special post-rebirth phase.
     if (!isMaxed && gameState.isRebirthing) {
         buyBtn.style.display = 'block';
         buyBtn.textContent = `Buy (Cost: ${upgrade.cost})`;

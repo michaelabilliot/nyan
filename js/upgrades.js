@@ -2,6 +2,7 @@ import { gameState, T } from './state.js';
 import { UPGRADES_DATA } from './data.js';
 import { getPurchaseMultiplier } from './core.js';
 import { calculateCostForAmount, calculateMaxAffordable } from './utils.js';
+import { playSfx } from './audio.js';
 
 export function buyUpgrade(id) {
     const upgrade = UPGRADES_DATA.find(u => u.id === id);
@@ -22,6 +23,7 @@ export function buyUpgrade(id) {
     const totalCost = calculateCostForAmount(upgrade, owned, amountToBuy);
 
     if (gameState.coins >= totalCost) {
+        playSfx('upgradeBuy');
         T({ 
             ...gameState, 
             coins: gameState.coins - totalCost,
