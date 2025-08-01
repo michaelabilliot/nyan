@@ -140,22 +140,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 500);
     }
 
+    // MODIFIED: Logic updated to fix post-rebirth coin bug.
     function finalizeRebirth() {
-        T({
-            ...getDefaultGameState(),
+        const freshState = getDefaultGameState();
+        const preservedState = {
             rebirths: gameState.rebirths + 1,
-            // FIX: Reset unspent rebirth points to 0 as requested.
             rebirthPoints: 0,
-            isRebirthing: false, // Ensure flag is reset.
+            isRebirthing: false,
             nyanTreeUpgrades: gameState.nyanTreeUpgrades,
             settings: gameState.settings,
             ownedSkins: gameState.ownedSkins,
             currentSkin: gameState.currentSkin,
             unlockedPlanets: gameState.unlockedPlanets,
             unlockedAchievements: gameState.unlockedAchievements,
-        });
+        };
+
+        // Combine them
+        T({ ...freshState, ...preservedState });
         
+        // This will unlock 'first_rebirth' and add its coin reward.
         checkAchievements();
+        
+        // NOW, override the coins back to the default (0), keeping the new achievement.
+        T({ ...gameState, coins: freshState.coins });
         
         renderUpgrades();
         updateDisplay();

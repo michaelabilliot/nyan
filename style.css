@@ -277,6 +277,8 @@ body {
 .modal-content { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 30px; border-radius: 20px; border: 2px solid var(--border-color); box-shadow: 0 0 30px rgba(255, 117, 214, 0.5); text-align: center; min-width: 500px; max-width: 80%; position: relative; }
 .modal-content h2 { margin-top: 0; font-size: 2.5em; color: var(--accent-pink); text-shadow: 2px 2px 3px rgba(0,0,0,0.5); }
 .modal-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+/* FIXED: z-index raised to appear over other modals */
+#confirm-modal { z-index: 1002; }
 #confirm-modal .modal-content { min-width: 350px; max-width: 50%; z-index: 2000; }
 #confirm-modal-title { font-size: 1.8em; color: var(--accent-yellow); margin-bottom: 10px; }
 #confirm-modal-message { font-size: 1.1em; color: var(--text-light); margin-bottom: 20px; }
@@ -287,7 +289,7 @@ body {
 .skin-card.equipped { border-color: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); }
 .skin-card img { width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated; background: rgba(0,0,0,0.2); border-radius: 8px; }
 
-/* ADDED: Achievement Modal Styles */
+/* MODIFIED: Re-themed Achievement Modal to match Skin Shop */
 .achievement-card {
     background-color: var(--item-bg);
     padding: 15px;
@@ -301,15 +303,23 @@ body {
 }
 .achievement-card.unlocked {
     border-color: var(--accent-green);
-    box-shadow: 0 0 10px var(--accent-green);
+}
+.achievement-card.unlocked:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 15px var(--accent-green);
 }
 .achievement-card.locked {
-    opacity: 0.6;
+    opacity: 0.5;
+}
+.achievement-card.locked .achievement-card-icon {
+    filter: grayscale(1) brightness(0.8);
 }
 .achievement-card-icon {
-    font-size: 3em;
     width: 60px;
-    text-align: center;
+    height: 60px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    filter: invert(1);
 }
 .achievement-card-text h4 {
     margin: 0 0 5px 0;
@@ -320,6 +330,7 @@ body {
     margin: 0;
     font-size: 0.9em;
 }
+
 
 #settings-modal .modal-content {
     min-width: 450px;

@@ -2,6 +2,7 @@ import { gameState, T } from './state.js';
 import { calculateTotalCPS, getGlobalMultiplier, getPurchaseMultiplier } from './core.js';
 import { UPGRADES_DATA, SKINS_DATA, ACHIEVEMENTS_DATA } from './data.js';
 import { buyUpgrade } from './upgrades.js';
+import { calculateCostForAmount, calculateMaxAffordable } from './utils.js';
 
 const coinCountEl = document.getElementById('coin-count');
 const cpsCountEl = document.getElementById('cps-count');
@@ -59,7 +60,7 @@ export function updateDisplay() {
     updatePrestigeUI();
 }
 
-// MODIFIED: This function now correctly calculates and displays the cost AND power for bulk purchases.
+// MODIFIED: This function now correctly calculates and displays the cost AND power for bulk purchases with scaling costs.
 export function updateUpgradeStyles() {
     const multiplier = getPurchaseMultiplier();
     const upgradeItems = upgradesListEl.children;
@@ -69,18 +70,16 @@ export function updateUpgradeStyles() {
         const upgrade = UPGRADES_DATA.find(u => u.id === upgradeId);
         if (!upgrade) continue;
         
+        const owned = gameState.upgrades[upgradeId]?.owned || 0;
         let totalCost;
-        let canAfford;
         let amountToBuy;
 
         if (multiplier === 'ALL') {
-            amountToBuy = Math.floor(gameState.coins / upgrade.baseCost);
-            totalCost = amountToBuy * upgrade.baseCost;
-            canAfford = amountToBuy > 0;
+            amountToBuy = calculateMaxAffordable(upgrade, owned, gameState.coins);
+            totalCost = calculateCostForAmount(upgrade, owned, amountToBuy);
         } else {
             amountToBuy = multiplier;
-            totalCost = upgrade.baseCost * amountToBuy;
-            canAfford = gameState.coins >= totalCost;
+            totalCost = calculateCostForAmount(upgrade, owned, amountToBuy);
         }
 
         const costEl = itemEl.querySelector('.upgrade-cost');
@@ -89,19 +88,20 @@ export function updateUpgradeStyles() {
         }
 
         const powerEl = itemEl.querySelector('.upgrade-power');
-        if(powerEl){
+        if (powerEl) {
             const totalPower = upgrade.power * amountToBuy;
             const powerType = upgrade.type === 'click' ? 'NPC' : 'CPS';
             powerEl.innerHTML = `+${formatNumber(totalPower)} ${powerType}`;
         }
 
-        if (canAfford) {
+        if (gameState.coins >= totalCost && amountToBuy > 0) {
             itemEl.classList.remove('disabled');
         } else {
             itemEl.classList.add('disabled');
         }
     }
 }
+
 
 export function renderUpgrades() {
     upgradesListEl.innerHTML = '';
@@ -165,7 +165,7 @@ export function renderShop() {
     });
 }
 
-// ADDED: Renders the achievement modal content.
+// MODIFIED: Re-themed to use images and match the rest of the UI.
 export function renderAchievements() {
     achievementsGrid.innerHTML = '';
     Object.keys(ACHIEVEMENTS_DATA).forEach(id => {
@@ -182,7 +182,7 @@ export function renderAchievements() {
         }
 
         card.innerHTML = `
-            <div class="achievement-card-icon">🏆</div>
+            <img src="assets/trophy.png" alt="Trophy" class="achievement-card-icon">
             <div class="achievement-card-text">
                 <h4>${isUnlocked ? achievement.name : '??????'}</h4>
                 <p>${isUnlocked ? achievement.description : 'Keep playing to unlock!'}</p>
