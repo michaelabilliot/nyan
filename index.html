@@ -17,20 +17,19 @@
             </div>
             <div id="rainbow-container"></div>
             <div id="nyan-cat-container">
-                <img src="assets/nyan-cat.png" id="nyan-cat-image" alt="Clickable Nyan Cat" draggable="false">
+                <img src="assets/cats/nyan-cat.png" id="nyan-cat-image" alt="Clickable Nyan Cat" draggable="false">
             </div>
         </div>
 
-		<!-- MODIFIED: Reordered the tabs -->
 		<div id="slide-out-container">
 			<div id="settings-tab" class="slide-tab">
-				<img src="assets/cog.png" alt="Settings">
+				<img src="assets/icons/cog.png" alt="Settings">
 			</div>
 			<div id="achievements-tab" class="slide-tab">
-				<img src="assets/trophy.png" alt="Achievements">
+				<img src="assets/icons/trophy.png" alt="Achievements">
 			</div>
 			<div id="nyan-tree-tab" class="slide-tab">
-				<img src="assets/tree.png" alt="Nyan Tree">
+				<img src="assets/icons/tree.png" alt="Nyan Tree">
 			</div>
 		</div>
 
@@ -57,9 +56,6 @@
         </div>
     </div>
     
-    <!-- CORRECTED: Moved container outside to be a sibling to #game-container, allowing for proper z-index layering against the right panel. -->
-    
-
     <!-- Fullscreen Nyan Tree Screen -->
     <div id="nyan-tree-screen" class="fullscreen-overlay">
         <div id="nyan-tree-header">
@@ -81,6 +77,7 @@
 
 	<div id="confirm-modal" class="modal-overlay">
         <div class="modal-content">
+            <span class="close-modal-x">×</span>
             <h2 id="confirm-modal-title"></h2>
             <p id="confirm-modal-message"></p>
             <div class="modal-buttons">
@@ -90,26 +87,31 @@
             </div>
         </div>
     </div>
-    <!-- Modals -->
+    <!-- MODIFIED: Shop Modal rebuilt for grid layout -->
     <div id="shop-modal" class="modal-overlay">
         <div class="modal-content">
+            <span class="close-modal-x">×</span>
             <h2>Skins & Boosts</h2>
-            <div class="modal-grid" id="skins-grid"></div>
-            <button class="btn close-modal-btn">Close</button>
+            <div id="skins-grid-container">
+                <!-- Skin cards will be generated here by JS -->
+            </div>
+            <div id="shop-actions">
+                <button id="shop-buy-btn" class="btn">Equip</button>
+            </div>
         </div>
     </div>
 
-    <!-- ADDED: Achievements Modal -->
     <div id="achievements-modal" class="modal-overlay">
         <div class="modal-content">
+            <span class="close-modal-x">×</span>
             <h2>Achievements</h2>
-            <div class="modal-grid" id="achievements-grid"></div>
-            <button class="btn close-modal-btn">Close</button>
+            <div id="achievements-content"></div>
         </div>
     </div>
 
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-content">
+            <span class="close-modal-x">×</span>
             <h2>Settings</h2>
             <div class="settings-container">
                 <div class="settings-section">
@@ -126,6 +128,12 @@
                         <input type="checkbox" id="music-toggle" checked>
                     </div>
                 </div>
+                 <div class="settings-section">
+                    <div class="setting-item">
+                        <label for="dark-mode-toggle">Dark Mode</label>
+                        <input type="checkbox" id="dark-mode-toggle">
+                    </div>
+                </div>
                 <div class="settings-section">
                     <div class="setting-item">
                         <label for="dev-mode-toggle">Developer Mode</label>
@@ -133,13 +141,18 @@
                     </div>
                     <div id="dev-mode-cheats" style="display: none;">
                         <button id="add-coins-cheat" class="btn">Add 1M Coins</button>
-                        <button id="add-rebirth-points-cheat" class="btn">Add 10 Rebirth Points</button>
+                        <button id="add-1b-coins-cheat" class="btn">Add 1B Coins</button>
+                        <button id="add-1t-coins-cheat" class="btn">Add 1T Coins</button>
+                        <button id="add-1q-coins-cheat" class="btn">Add 1Q Coins</button>
+                        <button id="add-rebirth-points-cheat" class="btn">Add 10 RP</button>
+                        <button id="get-249-upgrades-cheat" class="btn">Get 249 of Each</button>
+                        <button id="unlock-all-achievements-cheat" class="btn">Unlock Achievements</button>
+                        <button id="max-nyan-tree-cheat" class="btn">Max Nyan Tree</button>
                     </div>
                 </div>
             </div>
             <div class="settings-footer">
                 <button id="reset-game-btn" class="btn">Reset All Progress</button>
-                <button class="btn close-modal-btn">Close</button>
             </div>
         </div>
     </div>

@@ -30,5 +30,14 @@ export function buyUpgrade(id) {
                 [id]: { owned: owned + amountToBuy }
             }
         });
+
+        // ADDED: This block updates the UI instantly after purchase.
+        const upgradeEl = document.querySelector(`.upgrade-item[data-id="${id}"]`);
+        if (upgradeEl) {
+            const ownedEl = upgradeEl.querySelector('.upgrade-owned');
+            if (ownedEl) {
+                ownedEl.textContent = gameState.upgrades[id]?.owned || 0;
+            }
+        }
     }
 }

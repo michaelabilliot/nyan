@@ -12,11 +12,14 @@ const cpsBoostEl = document.getElementById('cps-boost-display');
 const npcBoostEl = document.getElementById('npc-boost-display');
 const rebirthBtn = document.getElementById('rebirth-btn');
 const upgradesListEl = document.getElementById('upgrades-list');
-const skinsGrid = document.getElementById('skins-grid');
 const achievementToast = document.getElementById('achievement-toast');
 const nyanTreeTab = document.getElementById('nyan-tree-tab');
 const settingsTab = document.getElementById('settings-tab');
-const achievementsGrid = document.getElementById('achievements-grid');
+const achievementsContent = document.getElementById('achievements-content');
+const shopBuyBtn = document.getElementById('shop-buy-btn');
+const skinsGridContainer = document.getElementById('skins-grid-container');
+
+let selectedSkinIdInShop = null;
 
 export function updatePrestigeUI() {
     settingsTab.style.display = 'flex';
@@ -44,15 +47,14 @@ export function formatNumber(num, isFloat = false) {
     return num.toExponential(2);
 }
 
-
 export function updateDisplay() {
     coinCountEl.innerHTML = formatNumber(gameState.coins);
-    cpsCountEl.innerHTML = formatNumber(calculateTotalCPS());
+    cpsCountEl.innerHTML = formatNumber(calculateTotalCPS(gameState));
 
     rebirthCountEl.textContent = gameState.rebirths;
     rebirthPointsEl.textContent = gameState.rebirthPoints;
 
-    const boostPercentage = (getGlobalMultiplier() - 1) * 100;
+    const boostPercentage = (getGlobalMultiplier(gameState) - 1) * 100;
     cpsBoostEl.textContent = `${boostPercentage.toFixed(2)}%`;
     npcBoostEl.textContent = `${boostPercentage.toFixed(2)}%`;
 
@@ -60,7 +62,6 @@ export function updateDisplay() {
     updatePrestigeUI();
 }
 
-// MODIFIED: This function now correctly calculates and displays the cost AND power for bulk purchases with scaling costs.
 export function updateUpgradeStyles() {
     const multiplier = getPurchaseMultiplier();
     const upgradeItems = upgradesListEl.children;
@@ -71,6 +72,12 @@ export function updateUpgradeStyles() {
         if (!upgrade) continue;
         
         const owned = gameState.upgrades[upgradeId]?.owned || 0;
+        
+        const ownedEl = itemEl.querySelector('.upgrade-owned');
+        if (ownedEl && ownedEl.textContent !== owned.toString()) {
+            ownedEl.textContent = owned;
+        }
+
         let totalCost;
         let amountToBuy;
 
@@ -105,9 +112,7 @@ export function updateUpgradeStyles() {
 
 export function renderUpgrades() {
     upgradesListEl.innerHTML = '';
-    const upgradesForPlanet = UPGRADES_DATA.filter(u => u.planet === gameState.currentPlanet);
-
-    upgradesForPlanet.forEach(upgrade => {
+    UPGRADES_DATA.forEach(upgrade => {
         const owned = gameState.upgrades[upgrade.id]?.owned || 0;
         const itemEl = document.createElement('div');
         itemEl.className = 'upgrade-item';
@@ -130,65 +135,117 @@ export function renderUpgrades() {
     updateUpgradeStyles();
 }
 
-export function renderShop() {
-    skinsGrid.innerHTML = '';
-    SKINS_DATA.forEach(skin => {
-        const card = document.createElement('div');
-        card.className = 'skin-card';
-        if (gameState.ownedSkins.includes(skin.id)) card.classList.add('owned');
-        if (gameState.currentSkin === skin.id) card.classList.add('equipped');
+//--- NEW SHOP GRID LOGIC ---//
+function updateShopButtons() {
+    const selectedSkin = SKINS_DATA.find(s => s.id === selectedSkinIdInShop);
+    if (!selectedSkin) return;
 
-        card.innerHTML = `
-            <img src="${skin.image}" alt="${skin.name}">
-            <div>
-                <h4>${skin.name}</h4>
-                <p>${skin.cost > 0 ? `Cost: ${formatNumber(skin.cost)}` : 'Default Skin'}</p>
-                ${skin.bonus ? `<p>Bonus: +${(skin.bonus.value - 1) * 100}% ${skin.bonus.type.toUpperCase()}</p>` : ''}
-            </div>
-        `;
+    const isOwned = gameState.ownedSkins.includes(selectedSkin.id);
+    const isEquipped = gameState.currentSkin === selectedSkin.id;
 
-        card.addEventListener('click', () => {
-            if (gameState.ownedSkins.includes(skin.id)) {
-                T({ ...gameState, currentSkin: skin.id });
-                renderShop();
-            } else if (gameState.coins >= skin.cost) {
-                T({
-                    ...gameState,
-                    coins: gameState.coins - skin.cost,
-                    ownedSkins: [...gameState.ownedSkins, skin.id],
-                    currentSkin: skin.id
-                });
-                renderShop();
-            }
-        });
-        skinsGrid.appendChild(card);
-    });
+    if (isEquipped) {
+        shopBuyBtn.innerHTML = 'Equipped';
+        shopBuyBtn.disabled = true;
+    } else if (isOwned) {
+        shopBuyBtn.innerHTML = 'Equip';
+        shopBuyBtn.disabled = false;
+    } else {
+        shopBuyBtn.innerHTML = `Buy (${formatNumber(selectedSkin.cost)})`;
+        shopBuyBtn.disabled = gameState.coins < selectedSkin.cost;
+    }
 }
 
-// MODIFIED: Re-themed to use images and match the rest of the UI.
-export function renderAchievements() {
-    achievementsGrid.innerHTML = '';
-    Object.keys(ACHIEVEMENTS_DATA).forEach(id => {
-        const achievement = ACHIEVEMENTS_DATA[id];
-        const card = document.createElement('div');
-        card.className = 'achievement-card';
-        
-        const isUnlocked = gameState.unlockedAchievements.includes(id);
+export function handleShopAction() {
+    const selectedSkin = SKINS_DATA.find(s => s.id === selectedSkinIdInShop);
+    if (!selectedSkin) return;
 
-        if (isUnlocked) {
-            card.classList.add('unlocked');
-        } else {
-            card.classList.add('locked');
+    if (gameState.ownedSkins.includes(selectedSkin.id)) {
+        T({ currentSkin: selectedSkin.id });
+    } else if (gameState.coins >= selectedSkin.cost) {
+        T({
+            coins: gameState.coins - selectedSkin.cost,
+            ownedSkins: [...gameState.ownedSkins, selectedSkin.id],
+            currentSkin: selectedSkin.id
+        });
+    }
+    renderShop(); // Re-render to update equipped status
+}
+
+export function renderShop() {
+    skinsGridContainer.innerHTML = '';
+    selectedSkinIdInShop = gameState.currentSkin;
+
+    SKINS_DATA.forEach(skin => {
+        const card = document.createElement('div');
+        card.className = 'skin-grid-card';
+        card.dataset.id = skin.id;
+
+        if (skin.id === gameState.currentSkin) {
+            card.classList.add('equipped');
+        }
+        if (skin.id === selectedSkinIdInShop) {
+            card.classList.add('selected');
         }
 
         card.innerHTML = `
-            <img src="assets/trophy.png" alt="Trophy" class="achievement-card-icon">
-            <div class="achievement-card-text">
-                <h4>${isUnlocked ? achievement.name : '??????'}</h4>
-                <p>${isUnlocked ? achievement.description : 'Keep playing to unlock!'}</p>
-            </div>
+            <img src="${skin.image}" alt="${skin.name}" class="skin-grid-card-img">
+            <h4>${skin.name}</h4>
         `;
-        achievementsGrid.appendChild(card);
+
+        card.addEventListener('click', () => {
+            selectedSkinIdInShop = skin.id;
+            document.querySelectorAll('.skin-grid-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            updateShopButtons();
+        });
+
+        skinsGridContainer.appendChild(card);
+    });
+
+    updateShopButtons();
+}
+
+
+export function renderAchievements() {
+    achievementsContent.innerHTML = '';
+    Object.keys(ACHIEVEMENTS_DATA).forEach(categoryName => {
+        const category = ACHIEVEMENTS_DATA[categoryName];
+        
+        const categoryDiv = document.createElement('div');
+        categoryDiv.className = 'achievement-category';
+        
+        const categoryTitle = document.createElement('h3');
+        categoryTitle.textContent = categoryName;
+        categoryDiv.appendChild(categoryTitle);
+
+        const gridLayout = document.createElement('div');
+        gridLayout.className = 'achievements-grid-layout';
+
+        Object.keys(category).forEach(id => {
+            const achievement = category[id];
+            const card = document.createElement('div');
+            card.className = 'achievement-card';
+            
+            const isUnlocked = gameState.unlockedAchievements.includes(id);
+
+            if (isUnlocked) {
+                card.classList.add('unlocked');
+            } else {
+                card.classList.add('locked');
+            }
+
+            card.innerHTML = `
+                <img src="assets/icons/trophy.png" alt="Trophy" class="achievement-card-icon">
+                <div class="achievement-card-text">
+                    <h4>${isUnlocked ? achievement.name : '??????'}</h4>
+                    <p>${isUnlocked ? achievement.description : 'Keep playing to unlock!'}</p>
+                </div>
+            `;
+            gridLayout.appendChild(card);
+        });
+
+        categoryDiv.appendChild(gridLayout);
+        achievementsContent.appendChild(categoryDiv);
     });
 }
 

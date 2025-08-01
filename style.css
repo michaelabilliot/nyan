@@ -1,10 +1,14 @@
 :root {
+    /* Light Theme (Default) */
     --panel-bg: rgba(255, 255, 255, 0.1);
     --item-bg: rgba(255, 255, 255, 0.05);
     --item-hover-bg: rgba(255, 255, 255, 0.15);
     --border-color: rgba(255, 255, 255, 0.3);
     --text-light: #f0f0f0;
     --text-dark: #333;
+    --modal-shadow: rgba(255, 117, 214, 0.5); 
+
+    /* Accent Colors (Consistent across themes) */
     --accent-yellow: #fee440;
     --accent-pink: #ff69b4;
     --accent-cyan: #00ffff;
@@ -12,12 +16,33 @@
     --accent-blue-progress: #3498db;
 }
 
+/* Dark Theme Overrides */
+body.dark-theme {
+    --panel-bg: rgba(10, 20, 30, 0.85);
+    --item-bg: rgba(0, 0, 0, 0.3);
+    --item-hover-bg: rgba(0, 0, 0, 0.5);
+    --border-color: rgba(255, 255, 255, 0.2);
+    --text-light: #f0f0f0;
+    --text-dark: #f0f0f0;
+    --modal-shadow: rgba(0, 0, 0, 0.5);
+}
+
+
 @keyframes scroll-bg {
     from {
         background-position-x: 0;
     }
     to {
         background-position-x: -1920px;
+    }
+}
+
+@keyframes scroll-trail {
+    from {
+        background-position-x: 0;
+    }
+    to {
+        background-position-x: -100px;
     }
 }
 
@@ -67,7 +92,6 @@ body {
     z-index: -1;
 }
 
-/* CORRECTED: position:relative and a high z-index to lift the panel above the slide-out tabs. */
 #right-panel { 
     flex: 1; 
     background-color: var(--panel-bg); 
@@ -91,7 +115,6 @@ body {
 }
 .upgrade-item:hover { transform: scale(1.02); }
 
-/* --- Nyan Tree Fullscreen --- */
 .fullscreen-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background-color: #000;
@@ -102,7 +125,7 @@ body {
     opacity: 0;
     transition: opacity 0.5s ease;
     padding: 20px;
-    box-sizing: border-box; /* Ensures padding is included in height */
+    box-sizing: border-box; 
     background-image: url('../assets/stars.png');
     background-size: cover;
 }
@@ -110,12 +133,12 @@ body {
 
 #nyan-tree-canvas { 
     width: 90%; 
-    flex: 1; /* Let it take available space */
+    flex: 1;
     position: relative; 
     border-radius: 20px; 
     overflow: hidden;
     cursor: grab;
-    min-height: 0; /* Critical fix for flexbox overflow */
+    min-height: 0;
 }
 #nyan-tree-canvas:active {
     cursor: grabbing;
@@ -162,7 +185,7 @@ body {
     align-items: center;
     gap: 15px;
     padding-top: 15px;
-    flex-shrink: 0; /* Prevents the footer from shrinking */
+    flex-shrink: 0;
 }
 
 #nyan-tree-details-panel {
@@ -181,15 +204,11 @@ body {
 #details-content p { margin: 0; }
 #nyan-tree-buy-btn { font-size: 1em; padding: 10px 25px; }
 
-/* CORRECTED: The exact implementation from your working git diff. */
 #slide-out-container {
     position: absolute;
-    /* This positions the container at the left edge of the right panel (which is 1/3 of the screen, starting at 2/3). */
     left: calc(100vw * 2 / 3); 
-    top: 20px; /* Aligned with the top padding of the panel, as per your diff. */
-    /* This pushes the container left by its own width, making it sit perfectly behind the panel's border. */
+    top: 20px;
     transform: translateX(-90%);
-    /* This ensures the tabs are layered *under* the right panel (z-index: 10). */
     z-index: 5; 
     display: flex;
     flex-direction: column; 
@@ -228,6 +247,11 @@ body {
 #nyan-cat-image:active { transform: scale(1.1); }
 #rainbow-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; }
 .rainbow-particle { position: absolute; width: 30px; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
+.rainbow-particle-scrolling {
+    background-repeat: repeat-y;
+    background-size: auto 100%;
+    animation: scroll-trail 1s linear infinite;
+}
 .floating-number { position: absolute; font-size: 2.5em; font-weight: bold; color: var(--accent-yellow); text-shadow: 2px 2px 4px black; pointer-events: none; animation: float-up 1.2s ease-out forwards; z-index: 20; }
 .floating-number .decimal-part { font-size: 0.6em; }
 @keyframes float-up { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-180px) scale(1.5); opacity: 0; } }
@@ -274,118 +298,122 @@ body {
 .upgrade-cost { font-size: 1.2em; color: var(--accent-yellow); font-weight: bold; }
 .upgrade-power { font-size: 1.em; color: var(--accent-cyan); font-weight: bold; }
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; backdrop-filter: blur(5px); background-color: rgba(0, 0, 0, 0.7); justify-content: center; align-items: center; z-index: 1000; }
-.modal-content { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 30px; border-radius: 20px; border: 2px solid var(--border-color); box-shadow: 0 0 30px rgba(255, 117, 214, 0.5); text-align: center; min-width: 500px; max-width: 80%; position: relative; }
+.modal-content { background: var(--panel-bg); backdrop-filter: blur(10px); padding: 30px; border-radius: 20px; border: 2px solid var(--border-color); box-shadow: 0 0 30px var(--modal-shadow); text-align: center; min-width: 500px; max-width: 80%; position: relative; }
 .modal-content h2 { margin-top: 0; font-size: 2.5em; color: var(--accent-pink); text-shadow: 2px 2px 3px rgba(0,0,0,0.5); }
 .modal-buttons { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
-/* FIXED: z-index raised to appear over other modals */
 #confirm-modal { z-index: 1002; }
 #confirm-modal .modal-content { min-width: 350px; max-width: 50%; z-index: 2000; }
 #confirm-modal-title { font-size: 1.8em; color: var(--accent-yellow); margin-bottom: 10px; }
 #confirm-modal-message { font-size: 1.1em; color: var(--text-light); margin-bottom: 20px; }
-.modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; max-height: 60vh; overflow-y: auto; padding: 10px; margin-bottom: 20px; }
-.skin-card { background-color: var(--item-bg); padding: 15px; border-radius: 10px; border: 2px solid var(--border-color); text-align: left; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 15px; }
-.skin-card:hover { transform: scale(1.02); box-shadow: 0 0 15px var(--accent-pink); }
-.skin-card.owned { border-color: var(--accent-yellow); }
-.skin-card.equipped { border-color: var(--accent-green); box-shadow: 0 0 15px var(--accent-green); }
-.skin-card img { width: 80px; height: 80px; object-fit: contain; image-rendering: pixelated; background: rgba(0,0,0,0.2); border-radius: 8px; }
 
-/* MODIFIED: Re-themed Achievement Modal to match Skin Shop */
-.achievement-card {
-    background-color: var(--item-bg);
-    padding: 15px;
-    border-radius: 10px;
-    border: 2px solid var(--border-color);
-    text-align: left;
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    transition: all 0.2s;
-}
-.achievement-card.unlocked {
-    border-color: var(--accent-green);
-}
-.achievement-card.unlocked:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 15px var(--accent-green);
-}
-.achievement-card.locked {
-    opacity: 0.5;
-}
-.achievement-card.locked .achievement-card-icon {
-    filter: grayscale(1) brightness(0.8);
-}
-.achievement-card-icon {
-    width: 60px;
-    height: 60px;
-    object-fit: contain;
-    image-rendering: pixelated;
-    filter: invert(1);
-}
-.achievement-card-text h4 {
-    margin: 0 0 5px 0;
-    font-size: 1.2em;
-    color: var(--accent-yellow);
-}
-.achievement-card-text p {
-    margin: 0;
-    font-size: 0.9em;
-}
+.close-modal-x { position: absolute; top: 10px; right: 20px; font-size: 2.5em; color: var(--text-light); cursor: pointer; transition: transform 0.2s ease; line-height: 1; }
+.close-modal-x:hover { transform: scale(1.2); }
+
+#achievements-modal .modal-content { max-width: 700px; }
+#achievements-content { display: flex; flex-direction: column; gap: 20px; max-height: 60vh; overflow-y: auto; text-align: left; padding-right: 15px; scrollbar-width: none; }
+#achievements-content::-webkit-scrollbar { display: none; }
+.achievement-category h3 { color: var(--accent-pink); border-bottom: 2px solid var(--border-color); padding-bottom: 5px; margin-bottom: 15px; }
+.achievements-grid-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.achievement-card { background-color: var(--item-bg); padding: 15px; border-radius: 10px; border: 2px solid var(--border-color); display: flex; align-items: center; gap: 15px; transition: all 0.2s; }
+.achievement-card.unlocked { border-color: var(--accent-green); }
+.achievement-card.unlocked:hover { transform: scale(1.02); box-shadow: 0 0 15px var(--accent-green); }
+.achievement-card.locked { opacity: 0.5; }
+.achievement-card.locked .achievement-card-icon { filter: grayscale(1) brightness(0.8); }
+.achievement-card-icon { width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; filter: invert(1); }
+.achievement-card-text h4 { margin: 0 0 5px 0; font-size: 1.1em; color: var(--accent-yellow); }
+.achievement-card-text p { margin: 0; font-size: 0.9em; }
 
 
-#settings-modal .modal-content {
-    min-width: 450px;
-    max-width: 600px;
-}
-#settings-modal .settings-container {
-    display: flex;
-    flex-direction: column;
-    gap: 25px;
-    margin-bottom: 25px;
-}
-#settings-modal .settings-section {
-    background-color: var(--item-bg);
-    border: 2px solid var(--border-color);
-    border-radius: 15px;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-#settings-modal .setting-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 1.2em;
-}
-#settings-modal .setting-item label {
-    margin-right: 15px;
-}
-#settings-modal input[type="range"] {
-    flex-grow: 1;
-}
-#settings-modal input[type="checkbox"] {
-    width: 25px;
-    height: 25px;
-}
+#settings-modal .modal-content { min-width: 450px; max-width: 600px; }
+#settings-modal .settings-container { display: flex; flex-direction: column; gap: 25px; margin-bottom: 25px; }
+#settings-modal .settings-section { background-color: var(--item-bg); border: 2px solid var(--border-color); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+#settings-modal .setting-item { display: flex; justify-content: space-between; align-items: center; font-size: 1.2em; }
+#settings-modal .setting-item label { margin-right: 15px; }
+#settings-modal input[type="range"] { flex-grow: 1; }
+#settings-modal .setting-item input[type="checkbox"] { width: 25px; height: 25px; transform: scale(1.2); }
 #dev-mode-cheats {
     display: none;
-    flex-direction: column;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
 }
-#settings-modal .settings-footer {
-    display: flex;
-    justify-content: space-between;
-    gap: 15px;
-}
-#settings-modal .settings-footer .btn {
-    flex-grow: 1;
-}
-#reset-game-btn {
-    background: linear-gradient(to bottom, #e74c3c, #c0392b);
-    color: #fff;
-}
+#settings-modal .settings-footer { display: flex; justify-content: space-between; gap: 15px; }
+#settings-modal .settings-footer .btn { flex-grow: 1; }
+#reset-game-btn { background: linear-gradient(to bottom, #e74c3c, #c0392b); color: #fff; }
 
-#achievement-toast { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: linear-gradient(145deg, #1e155b, #0c0730); border: 2px solid var(--accent-green); color: #fff; padding: 15px; border-radius: 15px; display: flex; align-items: center; gap: 15px; z-index: 2000; transition: bottom 0.5s ease-in-out; box-shadow: 0 0 20px var(--accent-green); }
+#achievement-toast {
+    position: fixed;
+    bottom: -100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--panel-bg);
+    backdrop-filter: blur(10px);
+    border: 2px solid var(--accent-green);
+    color: var(--text-light);
+    padding: 15px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 2000;
+    transition: bottom 0.5s ease-in-out;
+    box-shadow: 0 0 20px var(--accent-green);
+}
 #achievement-toast.show { bottom: 20px; }
 #achievement-icon { font-size: 2.5em; }
 #achievement-title { font-weight: bold; }
+
+/* MODIFIED: Shop Grid Styles */
+#shop-modal .modal-content { max-width: 900px; }
+#skins-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 15px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 15px;
+    margin-bottom: 15px;
+    scrollbar-width: none;
+}
+#skins-grid-container::-webkit-scrollbar { display: none; }
+
+.skin-grid-card {
+    background-color: var(--item-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 15px;
+    padding: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    opacity: 0.7;
+    position: relative;
+}
+.skin-grid-card:hover {
+    opacity: 1;
+    transform: scale(1.05);
+    border-color: var(--accent-yellow);
+}
+.skin-grid-card.selected {
+    opacity: 1;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 15px var(--accent-cyan);
+}
+.skin-grid-card.equipped {
+    opacity: 1;
+    border-color: var(--accent-green);
+    box-shadow: 0 0 15px var(--accent-green);
+}
+.skin-grid-card-img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
+    image-rendering: pixelated;
+    margin-bottom: 5px;
+}
+.skin-grid-card h4 {
+    margin: 0;
+    font-size: 1em;
+    color: var(--text-light);
+}
+
+#shop-actions { display: flex; justify-content: center; gap: 15px; width: 100%; }
+#shop-actions .btn { min-width: 180px; }
