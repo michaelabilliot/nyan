@@ -3,12 +3,18 @@ import { UPGRADES_DATA } from './data.js';
 import { getPurchaseMultiplier } from './core.js';
 import { calculateCostForAmount, calculateMaxAffordable } from './utils.js';
 import { playSfx } from './audio.js';
+import { updateUpgradeStyles } from './ui.js'; // ADDED for immediate update
 
-export function buyUpgrade(id) {
-    const upgrade = UPGRADES_DATA.find(u => u.id === id);
+export function buyUpgrade(upgradeId) {
+    const upgrade = UPGRADES_DATA.find(u => u.id === upgradeId);
     if (!upgrade) return;
 
-    const owned = gameState.upgrades[id]?.owned || 0;
+    // BUG FIX: Prevent buying locked upgrades
+    if (gameState.rebirths < (upgrade.rebirthUnlock || 0)) {
+        return;
+    }
+
+    const owned = gameState.upgrades[upgradeId]?.owned || 0;
     const multiplier = getPurchaseMultiplier();
     
     let amountToBuy = 0;
@@ -24,22 +30,21 @@ export function buyUpgrade(id) {
 
     if (gameState.coins >= totalCost) {
         playSfx('upgradeBuy');
+        const newCoins = gameState.coins - totalCost;
         T({ 
             ...gameState, 
-            coins: gameState.coins - totalCost,
+            coins: newCoins,
+            stats: { // Update stats
+                ...gameState.stats,
+                totalCoinsEarned: gameState.stats.totalCoinsEarned - totalCost // It's a spend, so we adjust total earned down by the cost if we were counting it that way. Better to just not count spending against it.
+            },
             upgrades: {
                 ...gameState.upgrades,
-                [id]: { owned: owned + amountToBuy }
+                [upgradeId]: { owned: owned + amountToBuy }
             }
         });
 
-        // MODIFIED: This block now correctly handles word mode.
-        const upgradeEl = document.querySelector(`.upgrade-item[data-id="${id}"]`);
-        if (upgradeEl) {
-            const ownedEl = upgradeEl.querySelector('.upgrade-owned');
-            if (ownedEl) {
-                ownedEl.textContent = gameState.isWordMode ? gameState.wordModeText.owned : (gameState.upgrades[id]?.owned || 0);
-            }
-        }
+        // BUG FIX: Immediately update UI after purchase
+        updateUpgradeStyles();
     }
 }

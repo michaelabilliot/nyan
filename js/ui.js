@@ -2,10 +2,11 @@ import { gameState, T } from './state.js';
 import { calculateTotalCPS, getGlobalMultiplier, getPurchaseMultiplier } from './core.js';
 import { UPGRADES_DATA, SKINS_DATA, ACHIEVEMENTS_DATA } from './data.js';
 import { buyUpgrade } from './upgrades.js';
-import { calculateCostForAmount, calculateMaxAffordable } from './utils.js';
+import { calculateCostForAmount, calculateMaxAffordable, formatNumber } from './utils.js';
 import { playSfx } from './audio.js';
 import { updateSkinAndMode } from './main.js';
 
+// Cache DOM elements
 const coinCountEl = document.getElementById('coin-count');
 const cpsCountEl = document.getElementById('cps-count');
 const rebirthBtn = document.getElementById('rebirth-btn');
@@ -13,49 +14,34 @@ const upgradesListEl = document.getElementById('upgrades-list');
 const achievementToast = document.getElementById('achievement-toast');
 const nyanTreeTab = document.getElementById('nyan-tree-tab');
 const settingsTab = document.getElementById('settings-tab');
+const statsTab = document.getElementById('stats-tab');
+const easterEggsTab = document.getElementById('easter-eggs-tab'); // ADDED
 const achievementsContent = document.getElementById('achievements-content');
 const shopBuyBtn = document.getElementById('shop-buy-btn');
 const skinCarouselTrack = document.getElementById('skin-carousel-track');
 const skinDetailsPanel = document.getElementById('skin-details-panel');
-
+const statsContent = document.getElementById('stats-content');
 
 let currentSkinIndex = 0;
 
-// Helper to get only the skins that should appear in the main shop
 function getVisibleShopSkins() {
     return SKINS_DATA.filter(s => !s.secret);
 }
 
-export function updatePrestigeUI() {
+// MODIFIED: Renamed function and added logic for easter egg tab
+export function updateTabVisibility() {
     settingsTab.style.display = 'flex';
+    statsTab.style.display = 'flex';
     nyanTreeTab.style.display = gameState.rebirths > 0 ? 'flex' : 'none';
-}
 
-export function formatNumber(num, isFloat = false) {
-    if (gameState.isWordMode) return gameState.wordModeText.numbers;
-    if (num < 1000000) {
-        return isFloat ? num.toFixed(2) : Math.floor(num).toLocaleString('en-US');
-    }
-
-    const suffixes = ["", "M", "B", "T", "Q", "Qt", "S", "Sp", "O", "N"];
-    const tier = Math.floor(Math.log10(Math.abs(num)) / 3);
-    
-    if (tier < suffixes.length) {
-        const suffix = suffixes[tier - 1];
-        const scale = Math.pow(10, tier * 3);
-        const scaled = num / scale;
-
-        const formatted = scaled.toFixed(2);
-        const parts = formatted.split('.');
-        return `${parts[0]}.<span class="decimal-part">${parts[1]}</span>${suffix ? `<span class="suffix-part">${suffix}</span>` : ''}`;
-    }
-    
-    return num.toExponential(2);
+    // Check if any secret skins have been unlocked
+    const hasFoundSecrets = SKINS_DATA.some(s => s.secret && gameState.ownedSkins.includes(s.id));
+    easterEggsTab.style.display = hasFoundSecrets ? 'flex' : 'none';
 }
 
 export function updateDisplay() {
     coinCountEl.innerHTML = formatNumber(gameState.coins);
-    cpsCountEl.innerHTML = formatNumber(calculateTotalCPS(gameState));
+    cpsCountEl.innerHTML = formatNumber(calculateTotalCPS(gameState), true);
 
     if (gameState.isWordMode) {
         document.querySelector("#rebirth-info-main").innerHTML = gameState.wordModeText.rebirthInfo;
@@ -69,7 +55,7 @@ export function updateDisplay() {
         document.querySelector("#npc-boost-display").textContent = `${boostPercentage.toFixed(2)}%`;
         rebirthBtn.innerHTML = `Rebirth`;
     }
-    updatePrestigeUI();
+    updateTabVisibility(); // MODIFIED: Call the renamed function
 }
 
 export function updateUpgradeStyles() {
@@ -110,6 +96,14 @@ export function updateUpgradeStyles() {
                 powerEl.innerHTML = `+${formatNumber(totalPower)} ${powerType}`;
             }
         }
+        
+        const contributionEl = itemEl.querySelector('.upgrade-contribution');
+        if (contributionEl && !gameState.isWordMode) {
+            const totalContribution = upgrade.power * owned;
+            const powerType = upgrade.type === 'click' ? 'NPC' : 'CPS';
+            contributionEl.innerHTML = `Total: +${formatNumber(totalContribution)} ${powerType}`;
+        }
+
 
         if (gameState.coins >= totalCost && amountToBuy > 0) {
             itemEl.classList.remove('disabled');
@@ -123,6 +117,10 @@ export function updateUpgradeStyles() {
 export function renderUpgrades() {
     upgradesListEl.innerHTML = '';
     UPGRADES_DATA.forEach(upgrade => {
+        if (gameState.rebirths < (upgrade.rebirthUnlock || 0)) {
+            return;
+        }
+
         const owned = gameState.upgrades[upgrade.id]?.owned || 0;
         const itemEl = document.createElement('div');
         itemEl.className = 'upgrade-item';
@@ -138,8 +136,8 @@ export function renderUpgrades() {
                 <span class="upgrade-cost">Cost: ...</span>
                 <span class="upgrade-power">${gameState.isWordMode ? gameState.wordModeText.power : (upgrade.type === 'click' ? `+${formatNumber(upgrade.power)} NPC` : `+${formatNumber(upgrade.power)} CPS`)}</span>
             </div>
+            <div class="upgrade-contribution"></div>
         `;
-        itemEl.addEventListener('click', () => buyUpgrade(upgrade.id));
         upgradesListEl.appendChild(itemEl);
     });
     updateUpgradeStyles();
@@ -265,6 +263,8 @@ export function renderAchievements() {
 
         Object.keys(category).forEach(id => {
             const achievement = category[id];
+            if (achievement.hidden) return; 
+
             const card = document.createElement('div');
             card.className = 'achievement-card';
             card.dataset.id = id;
@@ -290,11 +290,22 @@ export function renderAchievements() {
                 descText = isUnlocked ? achievement.description : 'Keep playing to unlock!';
             }
 
+            let progressHTML = '';
+            if (!isUnlocked && achievement.progress && typeof achievement.progress === 'function') {
+                const progressValue = Math.min(achievement.progress(gameState), 1);
+                progressHTML = `
+                    <div class="achievement-progress-bar">
+                        <div class="achievement-progress-bar-inner" style="width: ${progressValue * 100}%"></div>
+                    </div>
+                `;
+            }
+
             card.innerHTML = `
                 <img src="assets/icons/trophy.png" alt="Trophy" class="achievement-card-icon">
                 <div class="achievement-card-text">
                     <h4>${titleText}</h4>
                     <p>${descText}</p>
+                    ${progressHTML}
                 </div>
             `;
             gridLayout.appendChild(card);
@@ -305,7 +316,6 @@ export function renderAchievements() {
     });
 }
 
-// ADDED: New function to render unlocked secrets
 export function renderEasterEggs() {
     const contentEl = document.getElementById('easter-eggs-content');
     contentEl.innerHTML = '';
@@ -319,7 +329,7 @@ export function renderEasterEggs() {
 
     unlockedSecretSkins.forEach(skin => {
         const card = document.createElement('div');
-        card.className = 'achievement-card unlocked'; // Re-use styles
+        card.className = 'achievement-card unlocked';
         card.dataset.skinId = skin.id;
 
         const isEquipped = gameState.currentSkin === skin.id;
@@ -335,6 +345,38 @@ export function renderEasterEggs() {
         `;
         contentEl.appendChild(card);
     });
+}
+
+export function renderStats() {
+    const { stats } = gameState;
+    const time = new Date(stats.timePlayed * 1000).toISOString().substr(11, 8);
+
+    statsContent.innerHTML = `
+        <div class="stat-item">
+            <div class="stat-label">Time Played</div>
+            <div class="stat-value">${time}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Total Clicks</div>
+            <div class="stat-value">${formatNumber(gameState.totalClicks)}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Total Coins Earned (All Time)</div>
+            <div class="stat-value">${formatNumber(stats.totalCoinsEarned)}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Coins from Clicks</div>
+            <div class="stat-value">${formatNumber(stats.handmadeCoins)}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Total Rebirths</div>
+            <div class="stat-value">${formatNumber(stats.rebirths)}</div>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label">Golden Poptarts Clicked</div>
+            <div class="stat-value">${formatNumber(stats.goldenPoptartsClicked)}</div>
+        </div>
+    `;
 }
 
 

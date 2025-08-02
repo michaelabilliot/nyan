@@ -8,17 +8,27 @@ const audioSources = {
     click: 'assets/audio/nyan-click.mp3',
     upgradeBuy: 'assets/audio/upgrade-buy.mp3',
     skinBuy: 'assets/audio/skin-buy.mp3',
-    flash: 'assets/audio/flash.mp3', // ADDED: Sound for the secret transition
+    flash: 'assets/audio/flash.mp3', 
+    // ADDED: New SFX
+    boost: 'assets/audio/boost-spawn.mp3',
+    boostClick: 'assets/audio/boost-click.mp3',
 };
 
 const audioElements = {};
 let currentMusicKey = null;
+let userInteracted = false; // BUG FIX: Track user interaction for audio context
+
+export function setUserInteracted() {
+    userInteracted = true;
+}
 
 function fadeAudio(audio, targetVolume, duration = 500, onComplete = null) {
     const startVolume = audio.volume;
-    if (startVolume === targetVolume && audio.paused === false) return;
-
     if (audio.fadeInterval) clearInterval(audio.fadeInterval);
+    if (startVolume === targetVolume && audio.paused === false) {
+        if (onComplete) onComplete();
+        return;
+    }
 
     if (duration === 0) {
         audio.volume = targetVolume;
@@ -58,9 +68,9 @@ export function initAudio() {
 }
 
 export function playSfx(key) {
-    if (!gameState.settings.sfx || !audioElements[key]) return;
+    // BUG FIX & QoL: Check for interaction, global mute, and sfx toggle
+    if (!userInteracted || !gameState.settings.sfx || gameState.settings.globalMute || !audioElements[key]) return;
     const sfx = audioElements[key];
-    // MODIFIED: Use sfxVolume and check for valid number to prevent errors on old saves
     sfx.volume = typeof gameState.settings.sfxVolume === 'number' ? gameState.settings.sfxVolume : 0.8;
     sfx.currentTime = 0;
     sfx.play().catch(e => {}); // Suppress minor play errors
@@ -73,9 +83,9 @@ export function switchMusic(newKey, fadeDuration = 500) {
 
     currentMusicKey = newKey;
 
-    if (gameState.settings.music && audioElements[newKey]) {
+    // QoL: Check global mute
+    if (gameState.settings.music && !gameState.settings.globalMute && audioElements[newKey]) {
         const newMusic = audioElements[newKey];
-        // MODIFIED: Use musicVolume and check for valid number
         const targetVolume = typeof gameState.settings.musicVolume === 'number' ? gameState.settings.musicVolume : 0.5;
         newMusic.currentTime = 0;
         newMusic.volume = 0;
@@ -85,7 +95,7 @@ export function switchMusic(newKey, fadeDuration = 500) {
 }
 
 export function updateMusicVolume() {
-    if (currentMusicKey && gameState.settings.music) {
+    if (currentMusicKey && gameState.settings.music && !gameState.settings.globalMute) {
         const targetVolume = typeof gameState.settings.musicVolume === 'number' ? gameState.settings.musicVolume : 0.5;
         audioElements[currentMusicKey].volume = targetVolume;
     }
@@ -94,12 +104,23 @@ export function updateMusicVolume() {
 export function setMusicEnabled(enabled) {
     if (!currentMusicKey || !audioElements[currentMusicKey]) return;
     const music = audioElements[currentMusicKey];
-    if (enabled) {
+    if (enabled && !gameState.settings.globalMute) {
         const targetVolume = typeof gameState.settings.musicVolume === 'number' ? gameState.settings.musicVolume : 0.5;
         music.play().catch(e => {});
         fadeAudio(music, targetVolume);
     } else {
         fadeAudio(music, 0);
+    }
+}
+
+// QoL: New function to handle global mute
+export function setGlobalMute(muted) {
+    if (muted) {
+        if (currentMusicKey && audioElements[currentMusicKey]) {
+            fadeAudio(audioElements[currentMusicKey], 0, 200);
+        }
+    } else {
+        setMusicEnabled(gameState.settings.music);
     }
 }
 
@@ -110,7 +131,7 @@ export function pauseAllAudio() {
 }
 
 export function resumeAllAudio() {
-    if (currentMusicKey && gameState.settings.music) {
+    if (currentMusicKey && gameState.settings.music && !gameState.settings.globalMute) {
         const music = audioElements[currentMusicKey];
         const targetVolume = typeof gameState.settings.musicVolume === 'number' ? gameState.settings.musicVolume : 0.5;
         music.play().catch(e => {});

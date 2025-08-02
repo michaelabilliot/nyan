@@ -1,5 +1,7 @@
 // js/utils.js
 
+import { gameState } from './state.js';
+
 /**
  * Calculates the total cost to buy a certain number of upgrades, accounting for scaling costs.
  * Uses the formula for the sum of a geometric series.
@@ -51,4 +53,87 @@ export function calculateMaxAffordable(upgrade, owned, currentCoins) {
     );
     
     return affordableAmount;
+}
+
+// ADDED/MOVED: Enhanced formatNumber function
+const SUFFIXES = ["", "M", "B", "T", "Q", "Qt", "S", "Sp", "O", "N", "Dc", "UDc", "DDc"];
+export function formatNumber(num, isFloat = false) {
+    if (gameState.isWordMode) return gameState.wordModeText.numbers;
+    if (num === Infinity) return '∞';
+    if (num < 1000000 && !isFloat) return Math.floor(num).toLocaleString('en-US');
+    if (num < 1000000 && isFloat) return num.toFixed(2);
+
+    const notation = gameState.settings.notation || 'standard';
+
+    if (notation === 'scientific' || notation === 'engineering') {
+        const exponent = Math.floor(Math.log10(num));
+        let base;
+        let exp;
+        if (notation === 'engineering') {
+            exp = exponent - (exponent % 3);
+            base = num / Math.pow(10, exp);
+        } else {
+            exp = exponent;
+            base = num / Math.pow(10, exp);
+        }
+        return `${base.toFixed(2)}e+${exp}`;
+    }
+
+    // Standard notation
+    const tier = Math.floor(Math.log10(Math.abs(num)) / 3);
+    if (tier < SUFFIXES.length) {
+        const suffix = SUFFIXES[tier - 1];
+        const scale = Math.pow(10, tier * 3);
+        const scaled = num / scale;
+        const formatted = scaled.toFixed(2);
+        const parts = formatted.split('.');
+        return `${parts[0]}.<span class="decimal-part">${parts[1]}</span>${suffix ? `<span class="suffix-part">${suffix}</span>` : ''}`;
+    }
+    
+    return num.toExponential(2);
+}
+
+// ADDED: Utility for smooth counter animation
+let animationFrame;
+export function animateCounter(el, start, end, duration) {
+    if (animationFrame) cancelAnimationFrame(animationFrame);
+
+    const range = end - start;
+    let startTime = null;
+
+    function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const progress = Math.min((timestamp - startTime) / duration, 1);
+        const currentVal = start + range * progress;
+        el.innerHTML = formatNumber(currentVal);
+
+        if (progress < 1) {
+            animationFrame = requestAnimationFrame(step);
+        } else {
+            el.innerHTML = formatNumber(end);
+        }
+    }
+    animationFrame = requestAnimationFrame(step);
+}
+
+// ADDED: Deep merge utility for loading saves
+export function deepMerge(target, source) {
+    const output = { ...target };
+    if (isObject(target) && isObject(source)) {
+        Object.keys(source).forEach(key => {
+            if (isObject(source[key])) {
+                if (!(key in target)) {
+                    Object.assign(output, { [key]: source[key] });
+                } else {
+                    output[key] = deepMerge(target[key], source[key]);
+                }
+            } else {
+                Object.assign(output, { [key]: source[key] });
+            }
+        });
+    }
+    return output;
+}
+function isObject(item) {
+    return (item && typeof item === 'object' && !Array.isArray(item));
 }

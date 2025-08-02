@@ -2,33 +2,45 @@ import {
     gameState, T, getDefaultGameState, BASE_REBIRTH_COST, MULTIPLIERS
 } from './state.js';
 import {
-    calculateClickPower, calculateTotalCPS, getRebirthCost
+    calculateClickPower, calculateTotalCPS, getRebirthCost, calculateRebirthPointsGained
 } from './core.js';
 import {
-    updateDisplay, renderUpgrades, showAchievement, formatNumber, renderShop, updateUpgradeStyles, renderAchievements, navigateCarousel, handleShopAction, renderEasterEggs
+    updateDisplay, renderUpgrades, showAchievement, renderShop, updateUpgradeStyles, 
+    renderAchievements, navigateCarousel, handleShopAction, renderEasterEggs, renderStats, updateTabVisibility
 } from './ui.js';
-import { renderNyanTree, setupNyanTreePanning } from './nyanTree.js';
+import { renderNyanTree, setupNyanTree } from './nyanTree.js';
 import { ACHIEVEMENTS_DATA, SKINS_DATA, UPGRADES_DATA, NYAN_TREE_UPGRADES } from './data.js';
-import { initAudio, playSfx, switchMusic, updateMusicVolume, setMusicEnabled, pauseAllAudio, resumeAllAudio } from './audio.js';
+import { initAudio, playSfx, switchMusic, updateMusicVolume, setMusicEnabled, pauseAllAudio, resumeAllAudio, setUserInteracted, setGlobalMute } from './audio.js';
+import { formatNumber, animateCounter, deepMerge } from './utils.js';
+import { buyUpgrade } from './upgrades.js';
 
 // --- Module-level variables ---
 let animationFrameId = null;
 let wordGlitchInterval = null;
-let time = 0;
+let lastTickTime = performance.now();
 
-// --- DOM Element variables (to be assigned in init) ---
-let nyanCatImage = null;
-let nyanCatContainer = null;
-let rainbowContainer = null;
-let transitionOverlay = null;
-let achievementsContent = null;
-let achievementsModal = null;
-let easterEggsModal = null;
+// --- Particle Pool for Optimization ---
+const rainbowParticlePool = [];
+const MAX_PARTICLES = 200; 
+let particlePoolIndex = 0; 
 
-const WORD_TEXTS = ["WORD.", "SHIFT.", "WHATTTT", "OKAY"];
+// --- DOM Element Caching ---
+let nyanCatImage, nyanCatContainer, rainbowContainer, transitionOverlay, 
+    achievementsContent, achievementsModal, easterEggsModal, statsModal,
+    upgradesListEl, gameContainer, boostContainer;
+
+const WORD_TEXTS = ["WORD.", "SHIFT.", "WHATTTT", "OKAY", "BALANA PANTZ", "BLUNKED", "STANDING THE STAIRS", "DANCING THE WALL", "STAND STORM", "HE HEAR'ED THAT", "I DRAWED IT"];
 const getWordText = () => WORD_TEXTS[Math.floor(Math.random() * WORD_TEXTS.length)];
 
-// --- Core Functions moved to Module Scope ---
+
+function createParticlePool() {
+    for (let i = 0; i < MAX_PARTICLES; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'rainbow-particle';
+        rainbowContainer.appendChild(particle);
+        rainbowParticlePool.push(particle);
+    }
+}
 
 function animate() {
     if (gameState.isWordMode) {
@@ -41,38 +53,45 @@ function animate() {
             }, 3000);
         }
     } else {
-        time += 0.05;
-        if (nyanCatContainer) nyanCatContainer.style.transform = `translateY(${Math.sin(time * 0.5) * 20}px)`;
+        // The cat's bobbing animation is now handled entirely by CSS.
+        // This function is now only for the trail.
 
         const currentSkinData = SKINS_DATA.find(s => s.id === gameState.currentSkin) || SKINS_DATA.find(s => s.id === 'default');
         
-        if (nyanCatImage && currentSkinData && nyanCatImage.src.includes(currentSkinData.image.split('/').pop()) === false) {
-             nyanCatImage.src = currentSkinData.image;
-        }
+        if (currentSkinData?.trail && rainbowParticlePool.length > 0) {
+            // Get the next particle in the cycle, reusing the oldest one.
+            const particle = rainbowParticlePool[particlePoolIndex];
+            particlePoolIndex = (particlePoolIndex + 1) % MAX_PARTICLES;
 
-        if (currentSkinData && currentSkinData.trail && rainbowContainer) {
-            const particle = document.createElement('div');
+            // Set its properties
             particle.className = 'rainbow-particle';
             if (currentSkinData.trailAnimation === 'scroll') {
                 particle.classList.add('rainbow-particle-scrolling');
             }
             particle.style.backgroundImage = `url('${currentSkinData.trail}')`;
             particle.style.height = `${currentSkinData.trailHeight}px`;
-            const catRect = nyanCatImage.getBoundingClientRect();
-            const mainArea = document.getElementById('main-area');
-            if (mainArea) {
-                const containerRect = mainArea.getBoundingClientRect();
-                const startX = catRect.left - containerRect.left + (catRect.width / 2);
-                const startY = catRect.top - containerRect.top + (catRect.height / 2) - (currentSkinData.trailHeight / 2);
-                particle.style.left = `${startX}px`;
-                particle.style.top = `${startY}px`;
-                rainbowContainer.appendChild(particle);
-                particle.animate([{ transform: 'translateX(0)' }, { transform: `translateX(-${window.innerWidth * 0.7}px)` }], { duration: 3000, easing: 'linear' });
-                setTimeout(() => particle.remove(), 3000);
+
+            const catRect = nyanCatContainer.getBoundingClientRect(); // MODIFIED: Use the container for stable positioning, preventing jolts on click.
+            const containerRect = gameContainer.getBoundingClientRect();
+            
+            let startX, startY;
+
+            if (currentSkinData.trailOrigin) {
+                startX = (catRect.left - containerRect.left) + currentSkinData.trailOrigin.x;
+                startY = (catRect.top - containerRect.top) + currentSkinData.trailOrigin.y - (currentSkinData.trailHeight / 2);
+            } else {
+                startX = catRect.left - containerRect.left + (catRect.width / 2);
+                startY = catRect.top - containerRect.top + (catRect.height / 2) - (currentSkinData.trailHeight / 2);
             }
+            
+            particle.style.left = `${startX}px`;
+            particle.style.top = `${startY}px`;
+            
+            particle.animate([{ transform: 'translateX(0)' }, { transform: `translateX(-${window.innerWidth * 0.7}px)` }], { duration: 3000, easing: 'linear' });
         }
     }
-
+    
+    updateDisplay();
     animationFrameId = requestAnimationFrame(animate);
 }
 
@@ -91,43 +110,28 @@ function stopAnimation() {
     }
 }
 
-function applyTheme(theme) {
-    if (theme === 'dark') {
-        document.body.classList.add('dark-theme');
-    } else {
-        document.body.classList.remove('dark-theme');
+function applyTheme(theme, uiTheme) {
+    document.body.classList.toggle('dark-theme', theme === 'dark');
+    
+    document.body.classList.remove('theme-vaporwave', 'theme-matrix');
+    if (uiTheme && uiTheme !== 'default') {
+        document.body.classList.add(`theme-${uiTheme}`);
     }
 }
 
 function toggleWordMode(enable) {
     if (enable) {
         document.body.classList.add('word-mode');
-        applyTheme('dark'); // Force dark theme for contrast
+        applyTheme('dark', 'default'); 
         const darkModeToggle = document.getElementById('dark-mode-toggle');
         if (darkModeToggle) darkModeToggle.checked = true;
         
-        gameState.wordModeText = {
-            numbers: getWordText(),
-            rebirthInfo: `${getWordText()} ${getWordText()}`,
-            boosts: getWordText(),
-            rebirthButton: getWordText(),
-            owned: getWordText(),
-            cost: getWordText(),
-            power: getWordText(),
-            upgradeNames: getWordText(),
-            descriptions: getWordText(),
-            skinName: getWordText(),
-            shopButton: getWordText(),
-            category: getWordText(),
-            achievementName: getWordText(),
-            buy: getWordText(),
-            shopTitle: `${getWordText()} & ${getWordText()}`
-        };
+        gameState.wordModeText = { numbers: getWordText(), rebirthInfo: `${getWordText()} ${getWordText()}`, boosts: getWordText(), rebirthButton: getWordText(), owned: getWordText(), cost: getWordText(), power: getWordText(), upgradeNames: getWordText(), descriptions: getWordText(), skinName: getWordText(), shopButton: getWordText(), category: getWordText(), achievementName: getWordText(), buy: getWordText(), shopTitle: `${getWordText()} & ${getWordText()}` };
         if (nyanCatImage) nyanCatImage.src = 'assets/cats/word-cat.png';
     } else {
         document.body.classList.remove('word-mode');
-        applyTheme(gameState.settings.theme); // Revert to saved theme
-        gameState.wordModeText = {}; // Clear the static text
+        applyTheme(gameState.settings.theme, gameState.settings.uiTheme); 
+        gameState.wordModeText = {}; 
         const currentSkinData = SKINS_DATA.find(s => s.id === gameState.currentSkin);
         if (currentSkinData && nyanCatImage) nyanCatImage.src = currentSkinData.image;
     }
@@ -144,6 +148,7 @@ export function updateSkinAndMode(skinId) {
     stopAnimation();
     toggleWordMode(isWordSkin);
     startAnimation();
+    updateTabVisibility(); 
 }
 
 function showModal(modal) {
@@ -154,9 +159,44 @@ function hideModal(modal) {
     if (modal) modal.style.display = 'none';
 }
 
+function spawnGoldenPoptart() {
+    playSfx('boost');
+    const poptart = document.createElement('div');
+    poptart.className = 'golden-poptart';
+    poptart.style.top = `${Math.random() * 80 + 10}%`;
+
+    poptart.addEventListener('click', () => {
+        playSfx('boostClick');
+        T({
+            stats: { ...gameState.stats, goldenPoptartsClicked: gameState.stats.goldenPoptartsClicked + 1 }
+        });
+
+        T({ activeBoosts: { ...gameState.activeBoosts, goldenPoptart: 2 } });
+        setTimeout(() => {
+            T({ activeBoosts: { ...gameState.activeBoosts, goldenPoptart: 1 } });
+        }, 30000);
+
+        poptart.remove();
+    }, { once: true });
+
+    boostContainer.appendChild(poptart);
+    setTimeout(() => poptart.remove(), 10000); 
+}
+
+function scheduleNextPoptart() {
+    const minInterval = 5 * 60 * 1000; 
+    const maxInterval = 15 * 60 * 1000; 
+    const nextInterval = Math.random() * (maxInterval - minInterval) + minInterval;
+    
+    setTimeout(() => {
+        spawnGoldenPoptart();
+        scheduleNextPoptart();
+    }, nextInterval);
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- Assign DOM elements to module-level variables ---
+    // --- Assign DOM elements ---
     nyanCatImage = document.getElementById('nyan-cat-image');
     nyanCatContainer = document.getElementById('nyan-cat-container');
     rainbowContainer = document.getElementById('rainbow-container');
@@ -164,8 +204,11 @@ document.addEventListener('DOMContentLoaded', () => {
     achievementsContent = document.getElementById('achievements-content');
     achievementsModal = document.getElementById('achievements-modal');
     easterEggsModal = document.getElementById('easter-eggs-modal');
+    statsModal = document.getElementById('stats-modal');
+    upgradesListEl = document.getElementById('upgrades-list');
+    gameContainer = document.getElementById('game-container');
+    boostContainer = document.getElementById('boost-container');
     
-    const gameContainer = document.getElementById('game-container');
     const nyanTreeScreen = document.getElementById('nyan-tree-screen');
     const returnToGameBtn = document.getElementById('return-to-game-btn');
     const nyanTreeTab = document.getElementById('nyan-tree-tab');
@@ -184,14 +227,21 @@ document.addEventListener('DOMContentLoaded', () => {
     const settingsTab = document.getElementById('settings-tab');
     const achievementsTab = document.getElementById('achievements-tab');
     const easterEggsTab = document.getElementById('easter-eggs-tab');
+    const statsTab = document.getElementById('stats-tab');
 
     const musicVolumeSlider = document.getElementById('music-volume-slider');
     const sfxVolumeSlider = document.getElementById('sfx-volume-slider');
     const sfxToggle = document.getElementById('sfx-toggle');
     const musicToggle = document.getElementById('music-toggle');
+    const globalMuteToggle = document.getElementById('global-mute-toggle');
     const devModeToggle = document.getElementById('dev-mode-toggle');
     const devModeCheats = document.getElementById('dev-mode-cheats');
     const darkModeToggle = document.getElementById('dark-mode-toggle');
+    const themeSelector = document.getElementById('theme-selector');
+    const notationSelector = document.getElementById('notation-selector');
+    const manualSaveBtn = document.getElementById('manual-save-btn');
+    const exportSaveBtn = document.getElementById('export-save-btn');
+    const importSaveBtn = document.getElementById('import-save-btn');
 
     const shopBuyBtn = document.getElementById('shop-buy-btn');
     const skinNavLeft = document.getElementById('skin-nav-left');
@@ -229,38 +279,61 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleCatClick(event) {
         playSfx('click');
         const clickPower = calculateClickPower(gameState);
+        const newCoins = gameState.coins + clickPower;
+        const newTotalClicks = gameState.totalClicks + 1;
+        
         T({ 
-            totalClicks: gameState.totalClicks + 1,
-            coins: gameState.coins + clickPower
+            totalClicks: newTotalClicks,
+            coins: newCoins,
+            stats: {
+                ...gameState.stats,
+                handmadeCoins: gameState.stats.handmadeCoins + clickPower,
+                totalCoinsEarned: gameState.stats.totalCoinsEarned + clickPower,
+            }
         });
 
         if (!gameState.isWordMode) {
             const numberEl = document.createElement('div');
             numberEl.className = 'floating-number';
             numberEl.innerHTML = `+${formatNumber(clickPower, true)}`;
-            document.body.appendChild(numberEl);
-            numberEl.style.left = `${event.clientX - numberEl.offsetWidth / 2}px`;
-            numberEl.style.top = `${event.clientY - numberEl.offsetHeight / 2}px`;
+            gameContainer.appendChild(numberEl);
+            const containerRect = gameContainer.getBoundingClientRect();
+            numberEl.style.left = `${event.clientX - containerRect.left - numberEl.offsetWidth / 2}px`;
+            numberEl.style.top = `${event.clientY - containerRect.top - numberEl.offsetHeight / 2}px`;
             setTimeout(() => numberEl.remove(), 1200);
         }
 
-        checkAchievements();
+        checkAchievements('click');
     }
 
-    function tick() {
-        T({ ...gameState, coins: gameState.coins + calculateTotalCPS(gameState) / 10 });
-        updateDisplay();
-        updateUpgradeStyles();
-        checkAchievements();
+    function tick(deltaTime) {
+        const cps = calculateTotalCPS(gameState);
+        const coinsGained = cps * (deltaTime / 1000);
+        const newCoins = gameState.coins + coinsGained;
+        
+        T({
+            coins: newCoins,
+            stats: {
+                ...gameState.stats,
+                timePlayed: gameState.stats.timePlayed + (deltaTime / 1000),
+                totalCoinsEarned: gameState.stats.totalCoinsEarned + coinsGained,
+            }
+        });
+        
+        if (Math.random() < 0.1) {
+             checkAchievements('cps');
+             checkAchievements('coins');
+        }
     }
     
     function handleRebirth() {
         const cost = getRebirthCost();
-        if (gameState.coins >= cost) {
-            const pointsGained = Math.max(1, Math.floor(Math.log10(gameState.coins / cost) * 3));
+        const pointsGained = calculateRebirthPointsGained(gameState.coins, cost);
+
+        if (pointsGained > 0) {
             showCustomModal(
                 'Confirm Rebirth',
-                `Rebirthing will grant you ${pointsGained} Rebirth Point(s). Your current run will reset. Proceed?`,
+                `Rebirthing will grant you <strong>${pointsGained}</strong> Rebirth Point(s). Your current run will reset. Proceed?`,
                 (confirmed) => {
                     if (confirmed) {
                         runRebirthAnimation(pointsGained);
@@ -268,8 +341,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             );
         } else {
-            T({ ...gameState, triedRebirthEarly: true });
-            showCustomModal('Cannot Rebirth', `You need at least ${formatNumber(cost)} coins to rebirth!`, null, false);
+            T({ triedRebirthEarly: true });
+            checkAchievements('misc');
+            showCustomModal('Cannot Rebirth', `You need at least ${formatNumber(cost)} coins to gain your first Rebirth Point!`, null, false);
         }
     }
 
@@ -282,18 +356,19 @@ document.addEventListener('DOMContentLoaded', () => {
         stopAnimation(); 
         switchMusic(null, 800);
 
-        setTimeout(() => statsDisplay.classList.add('fade-out'), 0);
-        setTimeout(() => rightPanel.classList.add('fade-out'), 200);
-        setTimeout(() => nyanCat.classList.add('fade-out'), 400);
-        setTimeout(() => slideOutContainer.classList.add('fade-out'), 100);
-        setTimeout(() => rainbowContainer.classList.add('fade-out'), 400);
+        statsDisplay.classList.add('fade-out');
+        rightPanel.classList.add('fade-out');
+        nyanCat.classList.add('fade-out');
+        slideOutContainer.classList.add('fade-out');
+        rainbowContainer.classList.add('fade-out');
         
-        setTimeout(() => transitionOverlay.classList.add('active'), 800);
+        transitionOverlay.classList.add('active');
 
-        setTimeout(() => {
+        transitionOverlay.addEventListener('transitionend', () => {
             T({ 
                 ...gameState, 
                 rebirthPoints: gameState.rebirthPoints + pointsGained,
+                stats: { ...gameState.stats, rebirths: gameState.stats.rebirths + 1 },
                 isRebirthing: true,
             });
             showNyanTreeScreen();
@@ -303,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
             nyanCat.classList.remove('fade-out');
             slideOutContainer.classList.remove('fade-out');
             rainbowContainer.classList.remove('fade-out');
-        }, 1800); 
+        }, { once: true });
     }
 
     function showNyanTreeScreen() {
@@ -311,16 +386,16 @@ document.addEventListener('DOMContentLoaded', () => {
         gameContainer.style.display = 'none';
         nyanTreeScreen.style.display = 'flex'; 
 
-        switchMusic('nyanTree', 2443);
+        switchMusic('nyanTree', 1500);
         
         setTimeout(() => {
             const treeHeader = document.getElementById('nyan-tree-header');
             const treeWrapper = document.getElementById('nyan-tree-wrapper');
             const treeFooter = document.getElementById('nyan-tree-footer');
             
-            setTimeout(() => treeWrapper.classList.add('fade-in'), 0);
-            setTimeout(() => treeFooter.classList.add('fade-in'), 800);
-            setTimeout(() => treeHeader.classList.add('fade-in'), 1500);
+            treeWrapper.classList.add('fade-in');
+            treeFooter.classList.add('fade-in');
+            treeHeader.classList.add('fade-in');
 
             nyanTreeScreen.classList.add('show');
             transitionOverlay.classList.remove('active');
@@ -360,13 +435,14 @@ document.addEventListener('DOMContentLoaded', () => {
             currentSkin: gameState.currentSkin,
             unlockedAchievements: gameState.unlockedAchievements,
             totalClicks: gameState.totalClicks,
+            stats: gameState.stats,
         };
 
         T({ ...freshState, ...preservedState });
         
-        checkAchievements();
+        checkAchievements('rebirth');
         
-        T({ ...gameState, coins: 0 });
+        T({ coins: 0 });
         
         renderUpgrades();
         updateDisplay();
@@ -390,38 +466,72 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUpgradeStyles();
     }
 
-    function checkAchievements() {
-        Object.keys(ACHIEVEMENTS_DATA).forEach(category => {
+    const achievementGroups = {
+        click: ['Clicking'],
+        cps: ['Production'],
+        coins: ['Acquisition'],
+        upgrades: ['Construction'],
+        rebirth: ['Prestige'],
+        nyanTree: ['Nyan Tree'],
+        collection: ['Collection'],
+        mastery: ['Mastery'],
+        misc: ['Miscellaneous']
+    };
+
+    function checkAchievements(groupKey = null) {
+        const checkAll = (category) => {
             Object.keys(ACHIEVEMENTS_DATA[category]).forEach(id => {
                 if (!gameState.unlockedAchievements.includes(id)) {
-                    if (typeof ACHIEVEMENTS_DATA[category][id].condition === 'function') {
-                        if (ACHIEVEMENTS_DATA[category][id].condition(gameState)) {
-                            T({
-                                ...gameState,
-                                unlockedAchievements: [...gameState.unlockedAchievements, id],
-                                coins: gameState.coins + (ACHIEVEMENTS_DATA[category][id].reward || 0),
-                            });
-                            showAchievement(ACHIEVEMENTS_DATA[category][id].name, ACHIEVEMENTS_DATA[category][id].description);
-                        }
+                    const achievement = ACHIEVEMENTS_DATA[category][id];
+                    if (typeof achievement.condition === 'function' && achievement.condition(gameState)) {
+                        T({
+                            unlockedAchievements: [...gameState.unlockedAchievements, id],
+                            coins: gameState.coins + (achievement.reward || 0),
+                        });
+                        showAchievement(achievement.name, achievement.description);
+                        checkAchievements('mastery'); 
                     }
                 }
             });
-        });
+        };
+
+        if (groupKey) {
+            achievementGroups[groupKey].forEach(checkAll);
+        } else { 
+            Object.keys(ACHIEVEMENTS_DATA).forEach(checkAll);
+        }
     }
 
-    function saveGame() {
-        localStorage.setItem('nyanClickerSaveV5', JSON.stringify(gameState));
+
+    function saveGame(isManual = false) {
+        T({ lastSaveTime: Date.now() });
+        localStorage.setItem('nyanClickerSaveV6', JSON.stringify(gameState));
+        if (isManual) {
+            showAchievement("Game Saved!", "Your progress has been safely stored.");
+        }
     }
 
     function loadGame() {
-        const savedStateJSON = localStorage.getItem('nyanClickerSaveV5');
+        const savedStateJSON = localStorage.getItem('nyanClickerSaveV6');
         const defaultState = getDefaultGameState();
         
         if (savedStateJSON) {
             const loadedState = JSON.parse(savedStateJSON);
-            const finalSettings = { ...defaultState.settings, ...loadedState.settings };
-            const finalState = { ...defaultState, ...loadedState, settings: finalSettings };
+            const finalState = deepMerge(defaultState, loadedState);
             T(finalState);
+            
+            const timeOffline = Date.now() - (gameState.lastSaveTime || Date.now());
+            const offlineSeconds = Math.min(timeOffline / 1000, 8 * 3600); 
+            if (offlineSeconds > 10) {
+                const offlineCPS = calculateTotalCPS(gameState);
+                const offlineEarnings = offlineCPS * offlineSeconds * 0.1; 
+                T({
+                    coins: gameState.coins + offlineEarnings,
+                    stats: { ...gameState.stats, totalCoinsEarned: gameState.stats.totalCoinsEarned + offlineEarnings }
+                });
+                showCustomModal('Welcome Back!', `While you were away, you earned ${formatNumber(offlineEarnings)} Nyan Coins!`, null, false);
+            }
+
         } else {
             T(defaultState);
         }
@@ -433,7 +543,8 @@ document.addEventListener('DOMContentLoaded', () => {
             "Are you sure? This will wipe all your progress!",
             (confirmed) => {
                 if (confirmed) {
-                    localStorage.removeItem('nyanClickerSaveV5');
+                    stopAnimation();
+                    localStorage.removeItem('nyanClickerSaveV6');
                     T(getDefaultGameState()); 
                     location.reload();
                 }
@@ -442,13 +553,24 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function startMusicOnFirstInteraction() {
+        setUserInteracted();
         switchMusic('main');
         document.removeEventListener('mousedown', startMusicOnFirstInteraction);
         document.removeEventListener('keydown', startMusicOnFirstInteraction);
     }
 
-    function handleWindowFocus() { resumeAllAudio(); }
-    function handleWindowBlur() { pauseAllAudio(); }
+    function handleWindowFocus() { resumeAllAudio(); startAnimation(); }
+    function handleWindowBlur() { pauseAllAudio(); stopAnimation(); }
+
+    function gameLoop() {
+        const now = performance.now();
+        const deltaTime = now - lastTickTime;
+        lastTickTime = now;
+
+        tick(deltaTime);
+
+        setTimeout(gameLoop, 100);
+    }
 
     function init() {
         loadGame();
@@ -466,13 +588,23 @@ document.addEventListener('DOMContentLoaded', () => {
         shopBtn.addEventListener('click', () => { renderShop(); showModal(shopModal); });
         nyanTreeTab.addEventListener('click', () => {
             stopAnimation();
-            T({ ...gameState, isRebirthing: false });
+            T({ isRebirthing: false });
             showNyanTreeScreen();
         });
         settingsTab.addEventListener('click', () => { showModal(settingsModal); });
         achievementsTab.addEventListener('click', () => { renderAchievements(); showModal(achievementsModal); });
         easterEggsTab.addEventListener('click', () => { renderEasterEggs(); showModal(easterEggsModal); });
+        statsTab.addEventListener('click', () => { renderStats(); showModal(statsModal); });
         
+        upgradesListEl.addEventListener('click', (e) => {
+            const upgradeItem = e.target.closest('.upgrade-item');
+            if (upgradeItem) {
+                buyUpgrade(upgradeItem.dataset.id);
+                checkAchievements('upgrades');
+                updateUpgradeStyles(); 
+            }
+        });
+
         achievementsContent.addEventListener('click', (e) => {
             const card = e.target.closest('.achievement-card.clickable');
             if (card && card.dataset.id === 'misc_words_apart' && !gameState.isWordMode) {
@@ -480,28 +612,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 transitionOverlay.style.backgroundColor = '#FFF';
                 transitionOverlay.style.transition = 'opacity 0.2s ease-in';
 
-                const onFadeInComplete = () => {
+                transitionOverlay.addEventListener('transitionend', () => {
                     if (!gameState.ownedSkins.includes('word')) {
                         T({ ownedSkins: [...gameState.ownedSkins, 'word'] });
                     }
                     updateSkinAndMode('word');
                     hideModal(achievementsModal);
 
-                    requestAnimationFrame(() => {
-                        // MODIFIED: Increased fade-out duration
-                        transitionOverlay.style.transition = 'opacity 1.2s ease-out';
-                        transitionOverlay.classList.remove('active');
-                        
-                        const onFadeOutComplete = () => {
-                            transitionOverlay.style.backgroundColor = '#000';
-                            transitionOverlay.style.transition = 'opacity 1s ease-in-out';
-                            transitionOverlay.removeEventListener('transitionend', onFadeOutComplete);
-                        };
-                        transitionOverlay.addEventListener('transitionend', onFadeOutComplete);
-                    });
-                };
-
-                transitionOverlay.addEventListener('transitionend', onFadeInComplete, { once: true });
+                    transitionOverlay.style.transition = 'opacity 1.2s ease-out';
+                    transitionOverlay.classList.remove('active');
+                    
+                    transitionOverlay.addEventListener('transitionend', () => {
+                        transitionOverlay.style.backgroundColor = '#000';
+                        transitionOverlay.style.transition = 'opacity 1s ease-in-out';
+                    }, { once: true });
+                }, { once: true });
                 transitionOverlay.classList.add('active');
             }
         });
@@ -514,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (skinId && gameState.currentSkin !== skinId) {
                         playSfx('skinBuy');
                         updateSkinAndMode(skinId);
-                        renderEasterEggs(); // Re-render to update button states
+                        renderEasterEggs();
                     }
                 }
             }
@@ -528,81 +653,66 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmModalNo.addEventListener('click', () => { if (confirmCallback) confirmCallback(false); hideModal(confirmModal); });
         confirmModalOk.addEventListener('click', () => hideModal(confirmModal));
 
-        musicVolumeSlider.addEventListener('input', (e) => {
-            T({ settings: { ...gameState.settings, musicVolume: parseFloat(e.target.value) / 100 } });
-            updateMusicVolume();
-        });
-        sfxVolumeSlider.addEventListener('input', (e) => T({ settings: { ...gameState.settings, sfxVolume: parseFloat(e.target.value) / 100 } }));
-        sfxToggle.addEventListener('change', (e) => T({ settings: { ...gameState.settings, sfx: e.target.checked } }));
-        musicToggle.addEventListener('change', (e) => {
-            T({ settings: { ...gameState.settings, music: e.target.checked } });
-            setMusicEnabled(e.target.checked);
-        });
-        darkModeToggle.addEventListener('change', (e) => {
-            const newTheme = e.target.checked ? 'dark' : 'light';
-            T({ settings: { ...gameState.settings, theme: newTheme } });
-            if (!gameState.isWordMode) applyTheme(newTheme);
-        });
-        devModeToggle.addEventListener('change', (e) => {
-            T({ settings: { ...gameState.settings, devMode: e.target.checked } });
-            devModeCheats.style.display = e.target.checked ? 'grid' : 'none';
-        });
+        // Settings Listeners
+        musicVolumeSlider.addEventListener('input', (e) => { T({ settings: { ...gameState.settings, musicVolume: parseFloat(e.target.value) / 100 } }); updateMusicVolume(); });
+        sfxVolumeSlider.addEventListener('input', (e) => { T({ settings: { ...gameState.settings, sfxVolume: parseFloat(e.target.value) / 100 } }); });
+        sfxToggle.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, sfx: e.target.checked } }); });
+        musicToggle.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, music: e.target.checked } }); setMusicEnabled(e.target.checked); });
+        globalMuteToggle.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, globalMute: e.target.checked } }); setGlobalMute(e.target.checked); });
+        darkModeToggle.addEventListener('change', (e) => { const newTheme = e.target.checked ? 'dark' : 'light'; T({ settings: { ...gameState.settings, theme: newTheme } }); if (!gameState.isWordMode) applyTheme(newTheme, gameState.settings.uiTheme); });
+        themeSelector.addEventListener('change', (e) => { const newUiTheme = e.target.value; T({ settings: { ...gameState.settings, uiTheme: newUiTheme } }); applyTheme(gameState.settings.theme, newUiTheme); });
+        notationSelector.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, notation: e.target.value } }); });
+        devModeToggle.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, devMode: e.target.checked } }); devModeCheats.style.display = e.target.checked ? 'grid' : 'none'; });
 
+        // Save Management Listeners
+        manualSaveBtn.addEventListener('click', () => saveGame(true));
+        exportSaveBtn.addEventListener('click', () => { navigator.clipboard.writeText(btoa(JSON.stringify(gameState))).then(() => showAchievement('Copied to Clipboard!', 'Your save data is ready to be pasted.')); });
+        importSaveBtn.addEventListener('click', () => { const saveData = prompt('Paste your save data here:'); if (saveData) { try { T(JSON.parse(atob(saveData))); saveGame(); location.reload(); } catch (e) { alert('Invalid save data!'); } } });
+        
+        // Dev Cheats
         addCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e6 }); });
         add1bCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e9 }); });
         add1tCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e12 }); });
         add1qCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e15 }); });
-        addRebirthPointsCheat.addEventListener('click', () => { T({ rebirthPoints: gameState.rebirthPoints + 10 }); });
-        addRebirthsCheat.addEventListener('click', () => { T({ rebirths: gameState.rebirths + 5 }); });
-        
-        get249UpgradesCheat.addEventListener('click', () => {
-            const newUpgrades = { ...gameState.upgrades };
-            UPGRADES_DATA.forEach(upgrade => {
-                newUpgrades[upgrade.id] = { owned: 249 };
-            });
-            T({ upgrades: newUpgrades });
-            renderUpgrades();
-        });
-
-        unlockAllAchievementsCheat.addEventListener('click', () => {
-            const allAchievementIds = [];
-            Object.values(ACHIEVEMENTS_DATA).forEach(category => {
-                Object.keys(category).forEach(id => allAchievementIds.push(id));
-            });
-            T({ unlockedAchievements: allAchievementIds });
-        });
-
-        maxNyanTreeCheat.addEventListener('click', () => {
-            const maxedTree = {};
-            NYAN_TREE_UPGRADES.forEach(upgrade => {
-                maxedTree[upgrade.id] = upgrade.maxLevel;
-            });
-            T({ nyanTreeUpgrades: maxedTree });
-        });
+        addRebirthPointsCheat.addEventListener('click', () => { T({ rebirthPoints: gameState.rebirthPoints + 10 }); renderNyanTree(); });
+        addRebirthsCheat.addEventListener('click', () => { T({ rebirths: gameState.rebirths + 5 }); renderUpgrades(); });
+        get249UpgradesCheat.addEventListener('click', () => { const newUpgrades = { ...gameState.upgrades }; UPGRADES_DATA.forEach(upgrade => { newUpgrades[upgrade.id] = { owned: 249 }; }); T({ upgrades: newUpgrades }); renderUpgrades(); updateUpgradeStyles(); });
+        unlockAllAchievementsCheat.addEventListener('click', () => { const allAchievementIds = []; Object.values(ACHIEVEMENTS_DATA).forEach(category => Object.keys(category).forEach(id => allAchievementIds.push(id))); T({ unlockedAchievements: allAchievementIds }); renderAchievements(); });
+        maxNyanTreeCheat.addEventListener('click', () => { const maxedTree = {}; NYAN_TREE_UPGRADES.forEach(upgrade => maxedTree[upgrade.id] = upgrade.maxLevel); T({ nyanTreeUpgrades: maxedTree }); renderNyanTree(); });
         
         skinNavLeft.addEventListener('click', () => navigateCarousel(-1));
         skinNavRight.addEventListener('click', () => navigateCarousel(1));
         shopBuyBtn.addEventListener('click', handleShopAction);
         
-        setupNyanTreePanning();
+        setupNyanTree();
         
-        applyTheme(gameState.settings.theme);
-        updateSkinAndMode(gameState.currentSkin); // Use updateSkinAndMode to initialize correctly
+        applyTheme(gameState.settings.theme, gameState.settings.uiTheme);
+        updateSkinAndMode(gameState.currentSkin);
 
+        // Set initial UI state from loaded game
         musicVolumeSlider.value = gameState.settings.musicVolume * 100;
         sfxVolumeSlider.value = gameState.settings.sfxVolume * 100;
         sfxToggle.checked = gameState.settings.sfx;
         musicToggle.checked = gameState.settings.music;
+        globalMuteToggle.checked = gameState.settings.globalMute;
+        darkModeToggle.checked = gameState.settings.theme === 'dark';
+        themeSelector.value = gameState.settings.uiTheme;
+        notationSelector.value = gameState.settings.notation;
         devModeToggle.checked = gameState.settings.devMode;
         devModeCheats.style.display = gameState.settings.devMode ? 'grid' : 'none';
         
         multiplierBtn.textContent = `${MULTIPLIERS[gameState.purchaseMultiplierIndex] === 'ALL' ? 'ALL' : MULTIPLIERS[gameState.purchaseMultiplierIndex] + 'x'}`;
-
-        setInterval(tick, 100);
-        setInterval(saveGame, 5000);
+        
+        createParticlePool();
+        gameLoop();
         startAnimation();
+        scheduleNextPoptart();
+        setInterval(() => saveGame(false), 30000);
+        checkAchievements(); 
+        renderUpgrades(); 
+        updateUpgradeStyles();
 
-        console.log("Nyan Cat Clicker Initialized and Patched!");
+        console.log("Nyan Cat Clicker Initialized and Upgraded!");
     }
 
     init();

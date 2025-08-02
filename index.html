@@ -16,6 +16,7 @@
                 <p><span id="cps-count">0.0</span> Nyan Coins per second</p>
             </div>
             <div id="rainbow-container"></div>
+            <div id="boost-container"></div>
             <div id="nyan-cat-container">
                 <img src="assets/cats/nyan-cat.png" id="nyan-cat-image" alt="Clickable Nyan Cat" draggable="false">
             </div>
@@ -28,8 +29,11 @@
 			<div id="achievements-tab" class="slide-tab">
 				<img src="assets/icons/trophy.png" alt="Achievements">
 			</div>
-            <!-- ADDED: Easter Eggs Tab -->
-            <div id="easter-eggs-tab" class="slide-tab">
+			<div id="stats-tab" class="slide-tab">
+				<img src="assets/icons/stats.png" alt="Statistics">
+			</div>
+            <!-- MODIFIED: Hide this tab by default -->
+            <div id="easter-eggs-tab" class="slide-tab" style="display: none;">
 				<img src="assets/icons/egg.png" alt="Easter Eggs">
 			</div>
 			<div id="nyan-tree-tab" class="slide-tab">
@@ -75,6 +79,7 @@
                 <div id="details-content">Select a node to see details.</div>
                 <button id="nyan-tree-buy-btn" class="btn" style="display: none;">Buy</button>
             </div>
+            <button id="nyan-tree-reset-view-btn" class="btn">Reset View</button>
             <button id="return-to-game-btn" class="btn">Return to Game</button>
         </div>
     </div>
@@ -119,13 +124,22 @@
         </div>
     </div>
 
-    <!-- ADDED: Easter Egg Modal -->
     <div id="easter-eggs-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal-x">×</span>
             <h2>Secrets Found</h2>
             <div id="easter-eggs-content">
                 <!-- Easter eggs will be generated here by JS -->
+            </div>
+        </div>
+    </div>
+
+    <div id="stats-modal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-modal-x">×</span>
+            <h2>Statistics</h2>
+            <div id="stats-content">
+                <!-- Stats will be generated here by JS -->
             </div>
         </div>
     </div>
@@ -146,11 +160,31 @@
                         <input type="range" id="sfx-volume-slider" min="0" max="100" value="80">
                         <input type="checkbox" id="sfx-toggle" checked>
                     </div>
+                    <div class="setting-item">
+                        <label for="global-mute-toggle">Mute All Audio</label>
+                        <input type="checkbox" id="global-mute-toggle">
+                    </div>
                 </div>
                  <div class="settings-section">
                     <div class="setting-item">
                         <label for="dark-mode-toggle">Dark Mode</label>
                         <input type="checkbox" id="dark-mode-toggle">
+                    </div>
+                    <div class="setting-item">
+                        <label for="theme-selector">UI Theme</label>
+                        <select id="theme-selector" class="btn">
+                            <option value="default">Default</option>
+                            <option value="vaporwave">Vaporwave</option>
+                            <option value="matrix">Matrix</option>
+                        </select>
+                    </div>
+                    <div class="setting-item">
+                        <label for="notation-selector">Number Notation</label>
+                        <select id="notation-selector" class="btn">
+                            <option value="standard">Standard (M, B, T)</option>
+                            <option value="scientific">Scientific (e+6)</option>
+                            <option value="engineering">Engineering (e+6)</option>
+                        </select>
                     </div>
                 </div>
                 <div class="settings-section">
@@ -168,6 +202,13 @@
                         <button id="unlock-all-achievements-cheat" class="btn">Unlock Achievements</button>
                         <button id="max-nyan-tree-cheat" class="btn">Max Nyan Tree</button>
                         <button id="add-rebirths-cheat" class="btn">Add 5 Rebirths</button>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <div class="setting-item">
+                        <button id="manual-save-btn" class="btn">Save Game</button>
+                        <button id="export-save-btn" class="btn">Export Save</button>
+                        <button id="import-save-btn" class="btn">Import Save</button>
                     </div>
                 </div>
             </div>

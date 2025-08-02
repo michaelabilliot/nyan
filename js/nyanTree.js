@@ -3,29 +3,44 @@ import { NYAN_TREE_UPGRADES } from './data.js';
 import { playSfx } from './audio.js';
 
 let selectedNode = null;
+let nyanTreeWrapper = null; // Cache element
 
-export function setupNyanTreePanning() {
+// MODIFIED: Reworked panning and added zooming
+export function setupNyanTree() {
     const canvas = document.getElementById('nyan-tree-canvas');
-    const wrapper = document.getElementById('nyan-tree-wrapper');
+    nyanTreeWrapper = document.getElementById('nyan-tree-wrapper');
+    const resetButton = document.getElementById('nyan-tree-reset-view-btn');
+
     let isPanning = false;
     let startX, startY;
-    let initialX = 0, initialY = 0;
+    let panX = 0, panY = 0;
+    let scale = 1;
+
+    const updateTransform = () => {
+        nyanTreeWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+    };
+
+    const resetView = () => {
+        panX = 0;
+        panY = 0;
+        scale = 1;
+        updateTransform();
+    };
+    
+    resetButton.addEventListener('click', resetView);
 
     canvas.addEventListener('mousedown', (e) => {
         isPanning = true;
-        startX = e.clientX;
-        startY = e.clientY;
+        startX = e.clientX - panX;
+        startY = e.clientY - panY;
         canvas.style.cursor = 'grabbing';
-        const transform = new DOMMatrix(getComputedStyle(wrapper).transform);
-        initialX = transform.m41;
-        initialY = transform.m42;
     });
 
     canvas.addEventListener('mousemove', (e) => {
         if (!isPanning) return;
-        const dx = e.clientX - startX;
-        const dy = e.clientY - startY;
-        wrapper.style.transform = `translate(${initialX + dx}px, ${initialY + dy}px)`;
+        panX = e.clientX - startX;
+        panY = e.clientY - startY;
+        updateTransform();
     });
 
     const stopPanning = () => {
@@ -35,6 +50,25 @@ export function setupNyanTreePanning() {
 
     canvas.addEventListener('mouseup', stopPanning);
     canvas.addEventListener('mouseleave', stopPanning);
+
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+
+        const scaleAmount = -e.deltaY * 0.001;
+        const newScale = Math.max(0.2, Math.min(2, scale + scaleAmount));
+
+        // Adjust pan to zoom towards the mouse pointer
+        panX = mouseX - (mouseX - panX) * (newScale / scale);
+        panY = mouseY - (mouseY - panY) * (newScale / scale);
+        
+        scale = newScale;
+        updateTransform();
+    });
+    
+    resetView(); // Initialize view on setup
 }
 
 
@@ -53,7 +87,9 @@ function buyNyanTreeUpgrade(upgrade) {
                 [upgrade.id]: (ownedLevel || 0) + 1
             }
         });
-        renderNyanTree();
+        // OPTIMIZATION: Manually update points instead of full re-render
+        document.getElementById('nyan-tree-points-display').textContent = gameState.rebirthPoints;
+        renderNyanTree(); // Re-render to update node states and lines
         const currentSelectedUpgrade = NYAN_TREE_UPGRADES.find(u => u.id === selectedNode.id);
         if(currentSelectedUpgrade) selectNode(currentSelectedUpgrade);
     }
