@@ -23,6 +23,11 @@ const skinDetailsPanel = document.getElementById('skin-details-panel');
 const statsContent = document.getElementById('stats-content');
 
 let currentSkinIndex = 0;
+let saveGameCallback = () => {}; // Placeholder for the saveGame function
+
+export function setSaveGameCallback(callback) {
+    saveGameCallback = callback;
+}
 
 function getVisibleShopSkins() {
     return SKINS_DATA.filter(s => !s.secret);
@@ -208,6 +213,7 @@ export function handleShopAction() {
         } else {
             playSfx('skinBuy');
             updateSkinAndMode(selectedSkin.id);
+            saveGameCallback(true); // MODIFIED: Manually save when equipping a skin.
         }
     }
     

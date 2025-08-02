@@ -9,8 +9,8 @@ const audioSources = {
     upgradeBuy: 'assets/audio/upgrade-buy.mp3',
     skinBuy: 'assets/audio/skin-buy.mp3',
     flash: 'assets/audio/flash.mp3', 
-    // ADDED: New SFX
-    boost: 'assets/audio/boost-spawn.mp3',
+    // MODIFIED: Corrected file paths
+    boost: 'assets/audio/boost.mp3',
     boostClick: 'assets/audio/boost-click.mp3',
 };
 

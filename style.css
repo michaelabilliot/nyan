@@ -70,15 +70,6 @@ body.theme-matrix h1, body.theme-matrix h2, body.theme-matrix h3, body.theme-mat
     }
 }
 
-@keyframes scroll-trail {
-    from {
-        background-position-x: 0;
-    }
-    to {
-        background-position-x: -100px;
-    }
-}
-
 @keyframes word-cat-glitch {
     0% { transform: translate(0, 0) skew(0deg, 0deg); }
     25% { transform: translate(5px, -5px) skew(-5deg, 5deg) scale(1.1, 0.9); }
@@ -326,11 +317,9 @@ body.word-mode #game-container::after {
 #nyan-cat-image { width: 450px; cursor: pointer; transition: transform 0.1s ease; position: relative; image-rendering: pixelated; }
 #nyan-cat-image:active { transform: scale(1.1); }
 #rainbow-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 5; pointer-events: none; transition: opacity 0.5s ease-out; }
-.rainbow-particle { position: absolute; width: 30px; background-size: 100% 100%; background-repeat: no-repeat; image-rendering: pixelated; }
-.rainbow-particle-scrolling {
-    background-repeat: repeat-y;
-    background-size: auto 100%;
-    animation: scroll-trail 1s linear infinite;
+#trail-canvas {
+    width: 100%;
+    height: 100%;
 }
 .floating-number { position: absolute; font-size: 2.5em; font-weight: bold; color: var(--accent-yellow); text-shadow: 2px 2px 4px black; pointer-events: none; animation: float-up 1.2s ease-out forwards; z-index: 20; }
 .floating-number .decimal-part { font-size: 0.6em; }
@@ -411,8 +400,23 @@ body.word-mode #game-container::after {
 .achievement-progress-bar-inner { height: 100%; width: 0%; background-color: var(--accent-green); border-radius: 4px; transition: width 0.3s ease-out; }
 
 
-#settings-modal .modal-content { min-width: 450px; max-width: 600px; }
-#settings-modal .settings-container { display: flex; flex-direction: column; gap: 25px; margin-bottom: 25px; }
+/* MODIFIED: Make settings modal scrollable on overflow */
+#settings-modal .modal-content { 
+    min-width: 450px; 
+    max-width: 600px; 
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+}
+#settings-modal .settings-container { 
+    display: flex; 
+    flex-direction: column; 
+    gap: 25px; 
+    margin-bottom: 25px; 
+    overflow-y: auto;
+    flex-grow: 1;
+    padding-right: 15px; /* For scrollbar */
+}
 #settings-modal .settings-section { background-color: var(--item-bg); border: 2px solid var(--border-color); border-radius: 15px; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
 #settings-modal .setting-item { display: flex; justify-content: space-between; align-items: center; font-size: 1.2em; }
 #settings-modal .setting-item label { margin-right: 15px; }
@@ -423,7 +427,14 @@ body.word-mode #game-container::after {
     grid-template-columns: 1fr 1fr;
     gap: 10px;
 }
-#settings-modal .settings-footer { display: flex; justify-content: space-between; gap: 15px; }
+#settings-modal .settings-footer { 
+    display: flex; 
+    justify-content: space-between; 
+    gap: 15px; 
+    flex-shrink: 0; /* Prevent footer from shrinking */
+    padding-top: 15px;
+    border-top: 2px solid var(--border-color);
+}
 #settings-modal .settings-footer .btn { flex-grow: 1; }
 #reset-game-btn { background: linear-gradient(to bottom, #e74c3c, #c0392b); color: #fff; }
 

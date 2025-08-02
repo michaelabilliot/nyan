@@ -9,7 +9,6 @@ export function buyUpgrade(upgradeId) {
     const upgrade = UPGRADES_DATA.find(u => u.id === upgradeId);
     if (!upgrade) return;
 
-    // BUG FIX: Prevent buying locked upgrades
     if (gameState.rebirths < (upgrade.rebirthUnlock || 0)) {
         return;
     }
@@ -28,23 +27,19 @@ export function buyUpgrade(upgradeId) {
 
     const totalCost = calculateCostForAmount(upgrade, owned, amountToBuy);
 
+    // BUG FIX: Explicitly check if the player can afford the upgrade before buying.
     if (gameState.coins >= totalCost) {
         playSfx('upgradeBuy');
         const newCoins = gameState.coins - totalCost;
         T({ 
             ...gameState, 
             coins: newCoins,
-            stats: { // Update stats
-                ...gameState.stats,
-                totalCoinsEarned: gameState.stats.totalCoinsEarned - totalCost // It's a spend, so we adjust total earned down by the cost if we were counting it that way. Better to just not count spending against it.
-            },
             upgrades: {
                 ...gameState.upgrades,
                 [upgradeId]: { owned: owned + amountToBuy }
             }
         });
 
-        // BUG FIX: Immediately update UI after purchase
         updateUpgradeStyles();
     }
 }

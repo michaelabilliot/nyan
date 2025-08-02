@@ -6,7 +6,8 @@ import {
 } from './core.js';
 import {
     updateDisplay, renderUpgrades, showAchievement, renderShop, updateUpgradeStyles, 
-    renderAchievements, navigateCarousel, handleShopAction, renderEasterEggs, renderStats, updateTabVisibility
+    renderAchievements, navigateCarousel, handleShopAction, renderEasterEggs, renderStats, 
+    updateTabVisibility, setSaveGameCallback
 } from './ui.js';
 import { renderNyanTree, setupNyanTree } from './nyanTree.js';
 import { ACHIEVEMENTS_DATA, SKINS_DATA, UPGRADES_DATA, NYAN_TREE_UPGRADES } from './data.js';
@@ -19,28 +20,32 @@ let animationFrameId = null;
 let wordGlitchInterval = null;
 let lastTickTime = performance.now();
 
-// --- Particle Pool for Optimization ---
-const rainbowParticlePool = [];
-const MAX_PARTICLES = 200; 
-let particlePoolIndex = 0; 
+// --- NEW: Canvas Particle System Variables ---
+let trailCanvas, trailCtx;
+let particles = [];
+// Cache for loaded trail images to prevent reloading
+const trailImageCache = {};
 
 // --- DOM Element Caching ---
 let nyanCatImage, nyanCatContainer, rainbowContainer, transitionOverlay, 
     achievementsContent, achievementsModal, easterEggsModal, statsModal,
     upgradesListEl, gameContainer, boostContainer;
 
-const WORD_TEXTS = ["WORD.", "SHIFT.", "WHATTTT", "OKAY", "BALANA PANTZ", "BLUNKED", "STANDING THE STAIRS", "DANCING THE WALL", "STAND STORM", "HE HEAR'ED THAT", "I DRAWED IT"];
+const WORD_TEXTS = ["WORD.", "SHIFT.", "WHATTTT", "OKAY"];
 const getWordText = () => WORD_TEXTS[Math.floor(Math.random() * WORD_TEXTS.length)];
 
 
-function createParticlePool() {
-    for (let i = 0; i < MAX_PARTICLES; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'rainbow-particle';
-        rainbowContainer.appendChild(particle);
-        rainbowParticlePool.push(particle);
+// NEW: Function to load and cache trail images
+function loadTrailImage(src) {
+    if (trailImageCache[src]) {
+        return trailImageCache[src];
     }
+    const image = new Image();
+    image.src = src;
+    trailImageCache[src] = image;
+    return image;
 }
+
 
 function animate() {
     if (gameState.isWordMode) {
@@ -52,44 +57,78 @@ function animate() {
                 }
             }, 3000);
         }
-    } else {
-        // The cat's bobbing animation is now handled entirely by CSS.
-        // This function is now only for the trail.
+    }
+
+    // --- REVISED: Canvas Particle System Logic ---
+    if (trailCtx) {
+        // Clear the canvas for the new frame
+        trailCtx.clearRect(0, 0, trailCanvas.clientWidth, trailCanvas.clientHeight);
 
         const currentSkinData = SKINS_DATA.find(s => s.id === gameState.currentSkin) || SKINS_DATA.find(s => s.id === 'default');
-        
-        if (currentSkinData?.trail && rainbowParticlePool.length > 0) {
-            // Get the next particle in the cycle, reusing the oldest one.
-            const particle = rainbowParticlePool[particlePoolIndex];
-            particlePoolIndex = (particlePoolIndex + 1) % MAX_PARTICLES;
 
-            // Set its properties
-            particle.className = 'rainbow-particle';
-            if (currentSkinData.trailAnimation === 'scroll') {
-                particle.classList.add('rainbow-particle-scrolling');
+        // 1. SPAWN NEW PARTICLE SEGMENTS
+        if (!gameState.isWordMode && currentSkinData.trail && currentSkinData.trail !== '') {
+            const trailImage = loadTrailImage(currentSkinData.trail);
+
+            // Only proceed if the image has been loaded by the browser
+            if (trailImage.complete && trailImage.naturalHeight !== 0) {
+                const catRect = nyanCatContainer.getBoundingClientRect();
+                const containerRect = gameContainer.getBoundingClientRect();
+                
+                // Use trailHeight from data, otherwise default to the image's natural height
+                const trailHeight = currentSkinData.trailHeight || trailImage.naturalHeight;
+                // Calculate the segment's width to maintain the aspect ratio of the original slice image
+                const trailWidth = trailImage.naturalWidth * (trailHeight / trailImage.naturalHeight);
+
+                let startX, startY;
+                if (currentSkinData.trailOrigin) {
+                    startX = (catRect.left - containerRect.left) + currentSkinData.trailOrigin.x;
+                    startY = (catRect.top - containerRect.top) + currentSkinData.trailOrigin.y;
+                } else {
+                    startX = catRect.left - containerRect.left + (catRect.width / 2);
+                    startY = catRect.top - containerRect.top + (catRect.height / 2);
+                }
+                
+                // Define how fast the trail moves to the left
+                const trailSpeed = 10; // pixels per frame
+
+                // To prevent gaps, spawn enough segments to fill the space moved in one frame.
+                // We use Math.ceil to ensure we always fill the gap, even with fractional results.
+                const numToSpawn = Math.ceil(trailSpeed / trailWidth);
+
+                for (let i = 0; i < numToSpawn; i++) {
+                    const particle = {
+                        // Position new segments one after another to fill the gap
+                        x: startX - (i * trailWidth),
+                        y: startY,
+                        vx: -trailSpeed, // All segments move at the same speed
+                        image: trailImage,
+                        width: trailWidth,
+                        height: trailHeight,
+                    };
+                    particles.push(particle);
+                }
             }
-            particle.style.backgroundImage = `url('${currentSkinData.trail}')`;
-            particle.style.height = `${currentSkinData.trailHeight}px`;
+        }
 
-            const catRect = nyanCatContainer.getBoundingClientRect(); // MODIFIED: Use the container for stable positioning, preventing jolts on click.
-            const containerRect = gameContainer.getBoundingClientRect();
+        // 2. UPDATE AND DRAW EXISTING PARTICLES
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
             
-            let startX, startY;
-
-            if (currentSkinData.trailOrigin) {
-                startX = (catRect.left - containerRect.left) + currentSkinData.trailOrigin.x;
-                startY = (catRect.top - containerRect.top) + currentSkinData.trailOrigin.y - (currentSkinData.trailHeight / 2);
-            } else {
-                startX = catRect.left - containerRect.left + (catRect.width / 2);
-                startY = catRect.top - containerRect.top + (catRect.height / 2) - (currentSkinData.trailHeight / 2);
+            // Update position
+            p.x += p.vx;
+            
+            // Remove if it's moved off-screen
+            if (p.x < -p.width) {
+                particles.splice(i, 1);
+                continue;
             }
             
-            particle.style.left = `${startX}px`;
-            particle.style.top = `${startY}px`;
-            
-            particle.animate([{ transform: 'translateX(0)' }, { transform: `translateX(-${window.innerWidth * 0.7}px)` }], { duration: 3000, easing: 'linear' });
+            // Draw the trail image slice, centered vertically on its y-coordinate
+            trailCtx.drawImage(p.image, p.x, p.y - p.height / 2, p.width, p.height);
         }
     }
+    // --- END: Canvas Particle System Logic ---
     
     updateDisplay();
     animationFrameId = requestAnimationFrame(animate);
@@ -107,6 +146,11 @@ function stopAnimation() {
     if (wordGlitchInterval) {
         clearInterval(wordGlitchInterval);
         wordGlitchInterval = null;
+    }
+    // ADDED: Clear particles when stopping to prevent a burst on resume
+    particles = [];
+    if (trailCtx) {
+        trailCtx.clearRect(0, 0, trailCanvas.clientWidth, trailCanvas.clientHeight);
     }
 }
 
@@ -194,6 +238,41 @@ function scheduleNextPoptart() {
     }, nextInterval);
 }
 
+// MODIFIED: Added image smoothing properties to keep pixel art sharp.
+function resizeCanvas() {
+    if (!trailCanvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = trailCanvas.getBoundingClientRect();
+    trailCanvas.width = rect.width * dpr;
+    trailCanvas.height = rect.height * dpr;
+    if (trailCtx) {
+        trailCtx.scale(dpr, dpr);
+        // This is the magic! It tells the canvas not to blur pixels when scaling.
+        trailCtx.imageSmoothingEnabled = false;
+        trailCtx.mozImageSmoothingEnabled = false;
+        trailCtx.webkitImageSmoothingEnabled = false;
+        trailCtx.msImageSmoothingEnabled = false;
+    }
+}
+
+// This function needs to be defined in main.js so it can be passed to other modules.
+function saveGame(isManual = false) {
+    T({ lastSaveTime: Date.now() });
+
+    // MODIFIED: Autosaves should not store the current skin, but manual saves should.
+    // This prevents live-server reloads from reverting your skin choice during development.
+    if (isManual) {
+        localStorage.setItem('nyanClickerSaveV6', JSON.stringify(gameState));
+        if (document.getElementById('achievement-toast')) { // Check if UI is ready
+            showAchievement("Game Saved!", "Your progress has been safely stored.");
+        }
+    } else {
+        const autoSaveState = { ...gameState };
+        delete autoSaveState.currentSkin; // Don't save current skin on auto-save
+        localStorage.setItem('nyanClickerSaveV6', JSON.stringify(autoSaveState));
+    }
+}
+
 
 document.addEventListener('DOMContentLoaded', () => {
     // --- Assign DOM elements ---
@@ -208,6 +287,10 @@ document.addEventListener('DOMContentLoaded', () => {
     upgradesListEl = document.getElementById('upgrades-list');
     gameContainer = document.getElementById('game-container');
     boostContainer = document.getElementById('boost-container');
+    
+    // NEW: Assign canvas elements
+    trailCanvas = document.getElementById('trail-canvas');
+    trailCtx = trailCanvas.getContext('2d');
     
     const nyanTreeScreen = document.getElementById('nyan-tree-screen');
     const returnToGameBtn = document.getElementById('return-to-game-btn');
@@ -303,6 +386,8 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => numberEl.remove(), 1200);
         }
 
+        // BUG FIX: Immediately update upgrade styles after a click to reflect new coin total.
+        updateUpgradeStyles();
         checkAchievements('click');
     }
 
@@ -502,15 +587,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
-    function saveGame(isManual = false) {
-        T({ lastSaveTime: Date.now() });
-        localStorage.setItem('nyanClickerSaveV6', JSON.stringify(gameState));
-        if (isManual) {
-            showAchievement("Game Saved!", "Your progress has been safely stored.");
-        }
-    }
-
     function loadGame() {
         const savedStateJSON = localStorage.getItem('nyanClickerSaveV6');
         const defaultState = getDefaultGameState();
@@ -522,16 +598,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const timeOffline = Date.now() - (gameState.lastSaveTime || Date.now());
             const offlineSeconds = Math.min(timeOffline / 1000, 8 * 3600); 
-            if (offlineSeconds > 10) {
-                const offlineCPS = calculateTotalCPS(gameState);
-                const offlineEarnings = offlineCPS * offlineSeconds * 0.1; 
+
+            const offlineCPS = calculateTotalCPS(gameState);
+            const offlineEarnings = offlineCPS * offlineSeconds * 0.1; 
+
+            if (offlineSeconds > 10 && offlineEarnings > 0) {
                 T({
                     coins: gameState.coins + offlineEarnings,
                     stats: { ...gameState.stats, totalCoinsEarned: gameState.stats.totalCoinsEarned + offlineEarnings }
                 });
                 showCustomModal('Welcome Back!', `While you were away, you earned ${formatNumber(offlineEarnings)} Nyan Coins!`, null, false);
             }
-
         } else {
             T(defaultState);
         }
@@ -573,6 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function init() {
+        setSaveGameCallback(saveGame); // Pass the saveGame function to the UI module
         loadGame();
         initAudio(); 
         
@@ -580,6 +658,8 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('keydown', startMusicOnFirstInteraction);
         window.addEventListener('focus', handleWindowFocus);
         window.addEventListener('blur', handleWindowBlur);
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
         nyanCatImage.addEventListener('click', handleCatClick);
         rebirthBtn.addEventListener('click', handleRebirth);
@@ -617,6 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         T({ ownedSkins: [...gameState.ownedSkins, 'word'] });
                     }
                     updateSkinAndMode('word');
+                    saveGame(true); // Manually save this special skin unlock
                     hideModal(achievementsModal);
 
                     transitionOverlay.style.transition = 'opacity 1.2s ease-out';
@@ -639,6 +720,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (skinId && gameState.currentSkin !== skinId) {
                         playSfx('skinBuy');
                         updateSkinAndMode(skinId);
+                        saveGame(true); // Manually save when equipping a secret skin
                         renderEasterEggs();
                     }
                 }
@@ -666,8 +748,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Save Management Listeners
         manualSaveBtn.addEventListener('click', () => saveGame(true));
-        exportSaveBtn.addEventListener('click', () => { navigator.clipboard.writeText(btoa(JSON.stringify(gameState))).then(() => showAchievement('Copied to Clipboard!', 'Your save data is ready to be pasted.')); });
-        importSaveBtn.addEventListener('click', () => { const saveData = prompt('Paste your save data here:'); if (saveData) { try { T(JSON.parse(atob(saveData))); saveGame(); location.reload(); } catch (e) { alert('Invalid save data!'); } } });
+        exportSaveBtn.addEventListener('click', () => {
+            const saveData = JSON.stringify(gameState, null, 2); // Pretty-print the JSON
+            const blob = new Blob([saveData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'nyan-clicker-save.json';
+            a.click();
+            URL.revokeObjectURL(url);
+            showAchievement('Save Exported!', 'Check your downloads for the save file.');
+        });
+        // MODIFIED: Import function now handles plain text JSON, not base64.
+        importSaveBtn.addEventListener('click', () => { 
+            const saveData = prompt('Paste your save data here:'); 
+            if (saveData) { 
+                try { 
+                    T(JSON.parse(saveData)); 
+                    saveGame(true); // Manually save the imported data
+                    location.reload(); 
+                } catch (e) { 
+                    alert('Invalid save data!'); 
+                } 
+            } 
+        });
         
         // Dev Cheats
         addCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e6 }); });
@@ -703,7 +807,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         multiplierBtn.textContent = `${MULTIPLIERS[gameState.purchaseMultiplierIndex] === 'ALL' ? 'ALL' : MULTIPLIERS[gameState.purchaseMultiplierIndex] + 'x'}`;
         
-        createParticlePool();
         gameLoop();
         startAnimation();
         scheduleNextPoptart();
@@ -712,7 +815,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderUpgrades(); 
         updateUpgradeStyles();
 
-        console.log("Nyan Cat Clicker Initialized and Upgraded!");
+        console.log("Nyan Cat Clicker Initialized and Upgraded with Canvas Particles!");
     }
 
     init();
