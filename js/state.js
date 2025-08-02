@@ -10,6 +10,8 @@ export function getDefaultGameState() {
         triedRebirthEarly: false, 
         isWordMode: false, 
         
+        hasSeenRebirthGlow: false,
+
         purchaseMultiplierIndex: 0,
         upgrades: {},
         nyanTreeUpgrades: {},
@@ -18,39 +20,34 @@ export function getDefaultGameState() {
         unlockedAchievements: [],
         activeBoosts: {},
         
-        // ADDED: Last save time for offline progress
         lastSaveTime: Date.now(),
 
-        // ADDED: Statistics tracking
         stats: {
-            timePlayed: 0, // in seconds
+            timePlayed: 0,
             totalCoinsEarned: 0,
-            handmadeCoins: 0, // coins from clicks
-            rebirths: 0, // total rebirths ever
+            handmadeCoins: 0,
+            rebirths: 0,
             goldenPoptartsClicked: 0,
         },
 
         settings: { 
-            musicVolume: 0.5, 
-            sfxVolume: 0.8, 
+            musicVolume: 0.15, 
+            sfxVolume: 0.05, 
             sfx: true, 
             music: true, 
             devMode: false, 
             theme: 'light',
-            // ADDED: New settings
             globalMute: false,
-            notation: 'standard', // 'standard', 'scientific', 'engineering'
-            uiTheme: 'default', // 'default', 'vaporwave', 'matrix'
+            notation: 'standard',
+            uiTheme: 'default',
         },
     };
 }
 
 export const MULTIPLIERS = [1, 10, 50, 100, 'ALL'];
 export const BASE_REBIRTH_COST = 1e7;
-
-// ADDED: New constant for rebirth point cost scaling
 export const REBIRTH_POINT_COST_INCREASE = 1.010;
-
+export const UPGRADE_BOOST_MULTIPLIER = 1.25;
 
 export function T(newState) {
     Object.assign(gameState, newState);

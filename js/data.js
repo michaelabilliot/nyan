@@ -1,25 +1,24 @@
-import { calculateTotalCPS } from './core.js';
-
 export const UPGRADES_DATA = [
     { id: 'sprinkles', name: 'Sprinkles', description: 'Sweetens your clicks.', type: 'click', baseCost: 50, power: 1, costIncrease: 1.058 },
-    { id: 'lovebots', name: 'Lovebots', description: 'Generates Nyan affection automatically.', type: 'cps', baseCost: 125, power: 1, costIncrease: 1.056 },
-    { id: 'rainbow_mice', name: 'Rainbow Mice', description: 'These colorful critters boost your CPS.', type: 'click', baseCost: 500, power: 5, costIncrease: 1.055 },
-    { id: 'auto_petter', name: 'Auto-Petter', description: 'Keeps Nyan happy, increasing click power.', type: 'cps', baseCost: 1100, power: 6, costIncrease: 1.054 },
+    { id: 'lovebots', name: 'Lovebots', description: 'Generates Nyan affection automatically.', type: 'cps', baseCost: 125, power: 5, costIncrease: 1.056 },
+    { id: 'rainbow_mice', name: 'Rainbow Mice', description: 'These colorful critters boost your click power.', type: 'click', baseCost: 500, power: 5, costIncrease: 1.055 },
+    { id: 'auto_petter', name: 'Auto-Petter', description: 'Keeps Nyan happy, increasing click power.', type: 'cps', baseCost: 1100, power: 15, costIncrease: 1.054 },
     { id: 'catnip_farm', name: 'Catnip Farm', description: 'A steady supply of high-quality catnip.', type: 'click', baseCost: 12000, power: 100, costIncrease: 1.047 },
-    { id: 'keyboard_cat', name: 'Keyboard Cat', description: 'Plays you off to higher CPS.', type: 'cps', baseCost: 50000, power: 200, costIncrease: 1.049 },
+    { id: 'keyboard_cat', name: 'Keyboard Cat', description: 'Plays you off to higher CPS.', type: 'cps', baseCost: 50000, power: 150, costIncrease: 1.049 },
     { id: 'laser_pointer', name: 'Laser Pointer', description: 'Focuses Nyan\'s energy for powerful clicks.', type: 'click', baseCost: 100000, power: 80, costIncrease: 1.048 },
-    { id: 'yarn_ball', name: 'Yarn Ball', description: 'A classic toy for a classic cat.', type: 'cps', baseCost: 315000, power: 5000, costIncrease: 1.046 },
+    { id: 'yarn_ball', name: 'Yarn Ball', description: 'A classic toy for a classic cat.', type: 'cps', baseCost: 315000, power: 1500, costIncrease: 1.046 },
     { id: 'quantum_mouse', name: 'Quantum Mouse', description: 'A mouse that exists in multiple places at once, boosting your clicks.', type: 'click', baseCost: 2.2e7, power: 9000, costIncrease: 1.035, rebirthUnlock: 1 },
-    { id: 'rainbow_factory', name: 'Rainbow Factory', description: 'Mass produces rainbows, a key ingredient in Nyan Coins.', type: 'cps', baseCost: 8.1e7, power: 100000, costIncrease: 1.036, rebirthUnlock: 1 },
+    { id: 'rainbow_factory', name: 'Rainbow Factory', description: 'Mass produces rainbows, a key ingredient in Nyan Coins.', type: 'cps', baseCost: 8.1e7, power: 7500, costIncrease: 1.036, rebirthUnlock: 1 },
     { id: 'meme_archive', name: 'Meme Archive', description: 'Unlocks ancient memes, giving you powerful clicks.', type: 'click', baseCost: 3e8, power: 25000, costIncrease: 1.033, rebirthUnlock: 2 },
-    { id: 'poptart_catapult', name: 'Poptart Catapult', description: 'Launches Poptarts into the cosmos, generating coins.', type: 'cps', baseCost: 9e8, power: 200000, costIncrease: 1.036, rebirthUnlock: 2 },
+    { id: 'poptart_catapult', name: 'Poptart Catapult', description: 'Launches Poptarts into the cosmos, generating coins.', type: 'cps', baseCost: 9e8, power: 18000, costIncrease: 1.036, rebirthUnlock: 2 },
     { id: 'nyan_choir', name: 'Nyan Choir', description: 'A choir of Nyan Cats singing the song of their people, boosting CPS.', type: 'click', baseCost: 1.8e9, power: 100000, costIncrease: 1.036, rebirthUnlock: 3 },
-    { id: 'internet_core', name: 'Internet Core', description: 'Harness the power of the internet itself for massive click power.', type: 'cps', baseCost: 3e9, power: 15000000, costIncrease: 1.041, rebirthUnlock: 3 },
+    { id: 'internet_core', name: 'Internet Core', description: 'Harness the power of the internet itself for massive click power.', type: 'cps', baseCost: 3e9, power: 100000, costIncrease: 1.041, rebirthUnlock: 3 },
     { id: 'singularity', name: 'The Singularity', description: 'Become one with the Nyanverse. The ultimate CPS upgrade.', type: 'click', baseCost: 2e12, power: 200000, costIncrease: 1.016, rebirthUnlock: 4 },
+    { id: 'cosmic_pointer', name: 'Cosmic Pointer', description: 'A click from another dimension.', type: 'click', baseCost: 5e13, power: 1e6, costIncrease: 1.025, nyanTreeUnlock: 'click_path_3' },
+    { id: 'poptart_singularity', name: 'Poptart Singularity', description: 'Infinite poptarts from a single point in space.', type: 'cps', baseCost: 8e14, power: 5e7, costIncrease: 1.028, nyanTreeUnlock: 'cps_path_3' },
 ];
 
 export const SKINS_DATA = [ 
-    // MODIFIED: trailOrigin and trailHeight values have been updated for the new canvas system.
     { id: 'word', name: 'WORD.', rebirthUnlock: 0, secret: true, image: 'assets/cats/word-cat.png', trail: '', trailHeight: 0, bonus: { type: 'global', value: 1.25 }, description: 'type shift like right now 5 4 3 2 1' },
     { id: 'default', name: 'Classic Nyan', rebirthUnlock: 0, image: 'assets/cats/nyan-cat.png', trail: 'assets/cats/nyan-slice.png', trailHeight: 200, description: 'The original. The legend.', trailOrigin: { x: 80, y: 135 } }, 
     { id: 'gb', name: 'GB Nyan', rebirthUnlock: 1, bonus: { type: 'global', value: 1.005 }, image: 'assets/cats/GB.png', trail: 'assets/cats/GB-slice.png', trailHeight: 200, description: 'Gaming in glorious 4 shades of green.', trailOrigin: { x: 80, y: 135 } },
@@ -32,7 +31,8 @@ export const SKINS_DATA = [
     { id: 'nyaninja', name: 'Nyaninja', rebirthUnlock: 3, bonus: { type: 'global', value: 1.015 }, image: 'assets/cats/nyaninja.png', trail: 'assets/cats/nyaninja-slice.png', trailHeight: 130, description: 'Silent, deadly, and adorable.', trailOrigin: { x: 60, y: 80 } },
     { id: 'paddy', name: 'Paddy Nyan', rebirthUnlock: 3, bonus: { type: 'global', value: 1.015 }, image: 'assets/cats/paddy.png', trail: 'assets/cats/paddy-slice.png', trailHeight: 200, description: 'A lucky charm for your clicking adventure.', trailOrigin: { x: 90, y: 255 } },
     { id: 'pikanyan', name: 'Pikanyan', rebirthUnlock: 4, bonus: { type: 'global', value: 1.02 }, image: 'assets/cats/pikanyan.png', trail: 'assets/cats/pikanyan-slice.png', trailHeight: 200, description: 'I choose you, Nyan Cat!', trailOrigin: { x: 120, y: 155 } },
-    { id: 'pirate', name: 'Pirate Nyan', rebirthUnlock: 4, bonus: { type: 'global', value: 1.02 }, image: 'assets/cats/pirate.png', trail: 'assets/cats/pirate-slice.png', trailHeight: 200, description: 'Sails the cosmic seas for booty.', trailAnimation: 'scroll', trailOrigin: { x: 80, y: 135 } },
+    // MODIFIED: Removed obsolete 'trailAnimation' property
+    { id: 'pirate', name: 'Pirate Nyan', rebirthUnlock: 4, bonus: { type: 'global', value: 1.02 }, image: 'assets/cats/pirate.png', trail: 'assets/cats/pirate-slice.png', trailHeight: 200, description: 'Sails the cosmic seas for booty.', trailOrigin: { x: 80, y: 135 } },
     { id: 'pumpkin', name: 'Pumpkin Nyan', rebirthUnlock: 4, bonus: { type: 'global', value: 1.02 }, image: 'assets/cats/pumpkin.png', trail: 'assets/cats/pumpkin-slice.png', trailHeight: 200, description: 'It\'s always Halloween in space.', trailOrigin: { x: 80, y: 135 } },
     { id: 'pusheen', name: 'Pusheen Cat', rebirthUnlock: 5, bonus: { type: 'global', value: 1.025 }, image: 'assets/cats/pusheen-cat.png', trail: 'assets/cats/pusheen-slice.png', trailHeight: 250, description: 'The famous cartoon cat takes to the stars.', trailOrigin: { x: 150, y: 165 } },
     { id: 'rasta', name: 'Rasta Nyan', rebirthUnlock: 5, bonus: { type: 'global', value: 1.025 }, image: 'assets/cats/rasta.png', trail: 'assets/cats/rasta-slice.png', trailHeight: 200, description: 'Yeah mon, keep on clickin\'.', trailOrigin: { x: 80, y: 135 } },
@@ -46,97 +46,7 @@ export const SKINS_DATA = [
     { id: 'tacnayn', name: 'Tac Nayn', secretName: '???', rebirthUnlock: 9, bonus: { type: 'global', value: 1.10 }, image: 'assets/cats/tacnayn.png', trail: 'assets/cats/tacnayn-slice.png', trailHeight: 200, description: 'The antithesis of Nyan. Waffles, hate, and despair.', action: 'fight', trailOrigin: { x: 80, y: 135 } },
 ];
 
-const checkAllInCategory = (gs, category) => Object.keys(ACHIEVEMENTS_DATA[category]).every(id => gs.unlockedAchievements.includes(id));
-
-// ADDED: Progress functions for achievements
-export const ACHIEVEMENTS_DATA = {
-    Clicking: {
-        'click_1': { name: 'The Journey Begins', description: 'Make your first click.', condition: (gs) => gs.totalClicks >= 1, progress: (gs) => gs.totalClicks / 1 },
-        'click_100': { name: 'Getting Warmed Up', description: 'Click 100 times.', condition: (gs) => gs.totalClicks >= 100, progress: (gs) => gs.totalClicks / 100 },
-        'click_1k': { name: 'Clicker Trainee', description: 'Click 1,000 times.', condition: (gs) => gs.totalClicks >= 1000, progress: (gs) => gs.totalClicks / 1000 },
-        'click_10k': { name: 'Carpal Tunnel Incoming', description: 'Click 10,000 times.', condition: (gs) => gs.totalClicks >= 10000, progress: (gs) => gs.totalClicks / 10000 },
-        'click_100k': { name: 'Master Clicker', description: 'Click 100,000 times.', condition: (gs) => gs.totalClicks >= 100000, progress: (gs) => gs.totalClicks / 100000 },
-        'click_1m': { name: 'Mouse Destroyer', description: 'Click 1,000,000 times.', condition: (gs) => gs.totalClicks >= 1000000, progress: (gs) => gs.totalClicks / 1000000 },
-        'click_10m': { name: 'Finger of the Gods', description: 'Click 10,000,000 times.', condition: (gs) => gs.totalClicks >= 10000000, progress: (gs) => gs.totalClicks / 10000000 },
-    },
-    Production: {
-        'cps_1k': { name: 'Automatic Start', description: 'Reach 1,000 Nyan Coins per second.', condition: (gs) => calculateTotalCPS(gs) >= 1000, progress: (gs) => calculateTotalCPS(gs) / 1000 },
-        'cps_100k': { name: 'Rainbow Engine', description: 'Reach 100,000 Nyan Coins per second.', condition: (gs) => calculateTotalCPS(gs) >= 100000, progress: (gs) => calculateTotalCPS(gs) / 100000 },
-        'cps_1m': { name: 'Industrial Revolution', description: 'Reach 1 Million Nyan Coins per second.', condition: (gs) => calculateTotalCPS(gs) >= 1e6, progress: (gs) => calculateTotalCPS(gs) / 1e6 },
-        'cps_100m': { name: 'Planetary Production', description: 'Reach 100 Million Nyan Coins per second.', condition: (gs) => calculateTotalCPS(gs) >= 1e8, progress: (gs) => calculateTotalCPS(gs) / 1e8 },
-        'cps_1b': { name: 'Galactic Factory', description: 'Reach 1 Billion Nyan Coins per second.', condition: (gs) => calculateTotalCPS(gs) >= 1e9, progress: (gs) => calculateTotalCPS(gs) / 1e9 },
-        'cps_1t': { name: 'Universal Output', description: 'Reach 1 Trillion Nyan Coins per second.', condition: (gs) => calculateTotalCPS(gs) >= 1e12, progress: (gs) => calculateTotalCPS(gs) / 1e12 },
-    },
-    Acquisition: {
-        'coins_1k': { name: 'Coin Collector', description: 'Possess 1,000 Nyan Coins.', condition: (gs) => gs.coins >= 1000, progress: (gs) => gs.coins / 1000 },
-        'coins_1m': { name: 'Nyan Millionaire', description: 'Possess 1 Million Nyan Coins.', condition: (gs) => gs.coins >= 1e6, progress: (gs) => gs.coins / 1e6 },
-        'coins_1b': { name: 'Nyan Billionaire', description: 'Possess 1 Billion Nyan Coins.', condition: (gs) => gs.coins >= 1e9, progress: (gs) => gs.coins / 1e9 },
-        'coins_1t': { name: 'Nyan Trillionaire', description: 'Possess 1 Trillion Nyan Coins.', condition: (gs) => gs.coins >= 1e12, progress: (gs) => gs.coins / 1e12 },
-        'coins_1q': { name: 'Cosmic Tycoon', description: 'Possess 1 Quadrillion Nyan Coins.', condition: (gs) => gs.coins >= 1e15, progress: (gs) => gs.coins / 1e15 },
-        'coins_1qt': { name: 'Nyan God', description: 'Possess 1 Quintillion Nyan Coins.', condition: (gs) => gs.coins >= 1e18, progress: (gs) => gs.coins / 1e18 },
-    },
-    Construction: {
-        'upgrade_total_1': { name: 'First Step', description: 'Buy your first upgrade.', condition: (gs) => Object.keys(gs.upgrades).length > 0 },
-        'upgrade_total_100': { name: 'Upgrade Enthusiast', description: 'Buy 100 total upgrades.', condition: (gs) => Object.values(gs.upgrades).reduce((sum, u) => sum + u.owned, 0) >= 100, progress: (gs) => Object.values(gs.upgrades).reduce((sum, u) => sum + u.owned, 0) / 100 },
-        'upgrade_total_500': { name: 'Hoarder', description: 'Buy 500 total upgrades.', condition: (gs) => Object.values(gs.upgrades).reduce((sum, u) => sum + u.owned, 0) >= 500, progress: (gs) => Object.values(gs.upgrades).reduce((sum, u) => sum + u.owned, 0) / 500 },
-        'upgrade_total_1k': { name: 'Architect', description: 'Buy 1,000 total upgrades.', condition: (gs) => Object.values(gs.upgrades).reduce((sum, u) => sum + u.owned, 0) >= 1000, progress: (gs) => Object.values(gs.upgrades).reduce((sum, u) => sum + u.owned, 0) / 1000 },
-        'upgrade_total_2.5k': { name: 'Empire Builder', description: 'Buy 2,500 total upgrades.', condition: (gs) => Object.values(gs.upgrades).reduce((sum, u) => sum + u.owned, 0) >= 2500, progress: (gs) => Object.values(gs.upgrades).reduce((sum, u) => sum + u.owned, 0) / 2500 },
-        'sprinkles_250': { name: 'Sweet Tooth', description: 'Own 250 Sprinkles.', condition: (gs) => gs.upgrades['sprinkles']?.owned >= 250, progress: (gs) => (gs.upgrades['sprinkles']?.owned || 0) / 250 },
-        'lovebots_250': { name: 'Full of Love', description: 'Own 250 Lovebots.', condition: (gs) => gs.upgrades['lovebots']?.owned >= 250, progress: (gs) => (gs.upgrades['lovebots']?.owned || 0) / 250 },
-        'rainbow_mice_250': { name: 'Pied Piper', description: 'Own 250 Rainbow Mice.', condition: (gs) => gs.upgrades['rainbow_mice']?.owned >= 250, progress: (gs) => (gs.upgrades['rainbow_mice']?.owned || 0) / 250 },
-        'auto_petter_250': { name: 'Hands Off', description: 'Own 250 Auto-Petters.', condition: (gs) => gs.upgrades['auto_petter']?.owned >= 250, progress: (gs) => (gs.upgrades['auto_petter']?.owned || 0) / 250 },
-        'catnip_farm_250': { name: 'Green Thumb', description: 'Own 250 Catnip Farms.', condition: (gs) => gs.upgrades['catnip_farm']?.owned >= 250, progress: (gs) => (gs.upgrades['catnip_farm']?.owned || 0) / 250 },
-        'keyboard_cat_250': { name: 'Play Him Off', description: 'Own 250 Keyboard Cats.', condition: (gs) => gs.upgrades['keyboard_cat']?.owned >= 250, progress: (gs) => (gs.upgrades['keyboard_cat']?.owned || 0) / 250 },
-        'laser_pointer_250': { name: 'Red Dot Obsession', description: 'Own 250 Laser Pointers.', condition: (gs) => gs.upgrades['laser_pointer']?.owned >= 250, progress: (gs) => (gs.upgrades['laser_pointer']?.owned || 0) / 250 },
-        'yarn_ball_250': { name: 'All Tangled Up', description: 'Own 250 Yarn Balls.', condition: (gs) => gs.upgrades['yarn_ball']?.owned >= 250, progress: (gs) => (gs.upgrades['yarn_ball']?.owned || 0) / 250 },
-        'quantum_mouse_250': { name: 'Schrödinger\'s Pet', description: 'Own 250 Quantum Mice.', condition: (gs) => gs.upgrades['quantum_mouse']?.owned >= 250, progress: (gs) => (gs.upgrades['quantum_mouse']?.owned || 0) / 250 },
-        'rainbow_factory_250': { name: 'Double Rainbow', description: 'Own 250 Rainbow Factories.', condition: (gs) => gs.upgrades['rainbow_factory']?.owned >= 250, progress: (gs) => (gs.upgrades['rainbow_factory']?.owned || 0) / 250 },
-        'meme_archive_250': { name: 'Ancient Knowledge', description: 'Own 250 Meme Archives.', condition: (gs) => gs.upgrades['meme_archive']?.owned >= 250, progress: (gs) => (gs.upgrades['meme_archive']?.owned || 0) / 250 },
-        'poptart_catapult_250': { name: 'Breakfast Artillery', description: 'Own 250 Poptart Catapults.', condition: (gs) => gs.upgrades['poptart_catapult']?.owned >= 250, progress: (gs) => (gs.upgrades['poptart_catapult']?.owned || 0) / 250 },
-        'nyan_choir_250': { name: 'Harmonic Convergence', description: 'Own 250 Nyan Choirs.', condition: (gs) => gs.upgrades['nyan_choir']?.owned >= 250, progress: (gs) => (gs.upgrades['nyan_choir']?.owned || 0) / 250 },
-        'internet_core_250': { name: 'Series of Tubes', description: 'Own 250 Internet Cores.', condition: (gs) => gs.upgrades['internet_core']?.owned >= 250, progress: (gs) => (gs.upgrades['internet_core']?.owned || 0) / 250 },
-        'singularity_250': { name: 'Event Horizon', description: 'Own 250 Singularities.', condition: (gs) => gs.upgrades['singularity']?.owned >= 250, progress: (gs) => (gs.upgrades['singularity']?.owned || 0) / 250 },
-    },
-    Prestige: {
-        'rebirth_1': { name: 'Again!', description: 'Perform your first rebirth.', condition: (gs) => gs.rebirths >= 1, reward: 100000 },
-        'rebirth_5': { name: 'Time Loop', description: 'Rebirth 5 times.', condition: (gs) => gs.rebirths >= 5, progress: (gs) => gs.rebirths / 5 },
-        'rebirth_10': { name: 'Loop Master', description: 'Rebirth 10 times.', condition: (gs) => gs.rebirths >= 10, progress: (gs) => gs.rebirths / 10 },
-        'rebirth_25': { name: 'Déjà Vu', description: 'Rebirth 25 times.', condition: (gs) => gs.rebirths >= 25, progress: (gs) => gs.rebirths / 25 },
-        'rebirth_50': { name: 'Timeless Cat', description: 'Rebirth 50 times.', condition: (gs) => gs.rebirths >= 50, progress: (gs) => gs.rebirths / 50 },
-        'rebirth_100': { name: 'Ouroboros', description: 'Rebirth 100 times.', condition: (gs) => gs.rebirths >= 100, progress: (gs) => gs.rebirths / 100 },
-        'rp_10': { name: 'Tree Planter', description: 'Earn a total of 10 Rebirth Points.', condition: (gs) => (gs.rebirthPoints + Object.values(NYAN_TREE_UPGRADES).reduce((sum, u) => sum + (u.cost * (gs.nyanTreeUpgrades[u.id] || 0)), 0)) >= 10 },
-        'rp_50': { name: 'Sapling', description: 'Earn a total of 50 Rebirth Points.', condition: (gs) => (gs.rebirthPoints + Object.values(NYAN_TREE_UPGRADES).reduce((sum, u) => sum + (u.cost * (gs.nyanTreeUpgrades[u.id] || 0)), 0)) >= 50 },
-        'rp_100': { name: 'Cosmic Gardener', description: 'Earn a total of 100 Rebirth Points.', condition: (gs) => (gs.rebirthPoints + Object.values(NYAN_TREE_UPGRADES).reduce((sum, u) => sum + (u.cost * (gs.nyanTreeUpgrades[u.id] || 0)), 0)) >= 100 },
-    },
-    'Nyan Tree': {
-        'tree_unlock_click': { name: 'Sharpened Claws', description: 'Unlock the clicking path in the Nyan Tree.', condition: (gs) => gs.nyanTreeUpgrades['click_path_start'] > 0 },
-        'tree_unlock_cps': { name: 'Eternal Engine', description: 'Unlock the CPS path in the Nyan Tree.', condition: (gs) => gs.nyanTreeUpgrades['cps_path_start'] > 0 },
-        'tree_unlock_unique': { name: 'Efficient Engineering', description: 'Unlock the utility path in the Nyan Tree.', condition: (gs) => gs.nyanTreeUpgrades['unique_path_start'] > 0 },
-        'tree_end_click': { name: 'Peak Performance', description: 'Reach the end of a clicking branch.', condition: (gs) => gs.nyanTreeUpgrades['click_path_4a'] > 0 || gs.nyanTreeUpgrades['click_path_4b'] > 0 },
-        'tree_end_cps': { name: 'Perpetual Motion', description: 'Reach the end of the CPS branch.', condition: (gs) => gs.nyanTreeUpgrades['cps_path_4'] > 0 },
-        'tree_nodes_10': { name: 'Branching Out', description: 'Purchase 10 total node levels in the Nyan Tree.', condition: (gs) => Object.values(gs.nyanTreeUpgrades).reduce((a, b) => a + b, 0) >= 10, progress: (gs) => Object.values(gs.nyanTreeUpgrades).reduce((a, b) => a + b, 0) / 10 },
-        'tree_nodes_25': { name: 'Full Canopy', description: 'Purchase 25 total node levels in the Nyan Tree.', condition: (gs) => Object.values(gs.nyanTreeUpgrades).reduce((a, b) => a + b, 0) >= 25, progress: (gs) => Object.values(gs.nyanTreeUpgrades).reduce((a, b) => a + b, 0) / 25 },
-    },
-    Collection: {
-        'skins_all': { name: 'Fashionista', description: 'Own every skin.', condition: (gs) => SKINS_DATA.every(skin => skin.rebirthUnlock === 0 || gs.ownedSkins.includes(skin.id)) },
-    },
-    Mastery: {
-        'achieve_10': { name: 'Getting Started', description: 'Unlock 10 achievements.', condition: (gs) => gs.unlockedAchievements.length >= 10, progress: (gs) => gs.unlockedAchievements.length / 10 },
-        'achieve_25': { name: 'Dedicated', description: 'Unlock 25 achievements.', condition: (gs) => gs.unlockedAchievements.length >= 25, progress: (gs) => gs.unlockedAchievements.length / 25 },
-        'achieve_50': { name: 'Completionist', description: 'Unlock 50 achievements.', condition: (gs) => gs.unlockedAchievements.length >= 50, progress: (gs) => gs.unlockedAchievements.length / 50 },
-        'achieve_all_clicking': { name: 'Clicking God', description: 'Unlock all Clicking achievements.', condition: (gs) => checkAllInCategory(gs, 'Clicking') },
-        'achieve_all_production': { name: 'Automation King', description: 'Unlock all Production achievements.', condition: (gs) => checkAllInCategory(gs, 'Production') },
-        'achieve_all_construction': { name: 'Master Builder', description: 'Unlock all Construction achievements.', condition: (gs) => checkAllInCategory(gs, 'Construction') },
-    },
-    Miscellaneous: {
-        'misc_dark_mode': { name: 'Hello Darkness', description: 'Check out the dark side.', condition: (gs) => gs.settings.theme === 'dark' },
-        'misc_too_soon': { name: 'A Bit Ambitious', description: 'Try to rebirth before you can afford it.', condition: (gs) => gs.triedRebirthEarly },
-        'misc_save_often': { name: 'Just In Case', description: 'The game has been saved.', condition: () => true, hidden: true },
-        // MODIFIED: Corrected the logic for this achievement to be possible, and fixed typo.
-        'misc_words_apart': { name: 'Words Apart', description: 'Sometimes you need to keep your worlds apart.', isClickable: true, condition: (gs) => (gs.upgrades['sprinkles']?.owned > 0 && (gs.upgrades['lovebots']?.owned || 0) === 0 && gs.upgrades['rainbow_mice']?.owned > 0) },
-    }
-};
-
+// MODIFIED: Obsolete perks have been replaced with new, functional ones.
 export const NYAN_TREE_UPGRADES = [
     { "id": "starter", "name": "Nyan Genesis", "description": "The beginning of your cosmic journey. Unlocks the first upgrade paths.", "cost": 0, "maxLevel": 1, "dependencies": [], "x": 797, "y": 377, "icon": "assets/icons/tree.png", "isStarter": true },
     { "id": "click_path_start", "name": "Sharpened Claws", "description": "Increases base click power by 5%.", "cost": 1, "maxLevel": 1, "dependencies": [ "starter" ], "x": 746, "y": 288, "icon": "assets/icons/tree.png" },
@@ -149,12 +59,12 @@ export const NYAN_TREE_UPGRADES = [
     { "id": "cps_path_3", "name": "Poptart Singularity", "description": "Unlocks a powerful new CPS building in the main shop.", "cost": 3, "maxLevel": 1, "dependencies": [ "cps_path_2" ], "x": 1222, "y": 309, "icon": "assets/icons/tree.png" },
     { "id": "cps_path_4", "name": "Idleverse", "description": "Generate 10% of your CPS while the game is closed.", "cost": 10, "maxLevel": 1, "dependencies": ["cps_path_3", "unique_path_4b"], "x": 1355, "y": 403, "icon": "assets/icons/tree.png" },
     { "id": "unique_path_start", "name": "Efficient Engineering", "description": "All building costs are permanently reduced by 2% per level.", "cost": 1, "maxLevel": 5, "dependencies": [ "starter" ], "x": 633, "y": 467, "icon": "assets/icons/tree.png" },
-    { "id": "unique_path_2a", "name": "Golden Touch", "description": "Makes the Golden Nyan skin a prestige unlock instead of a coin purchase.", "cost": 3, "maxLevel": 1, "dependencies": [ "unique_path_start" ], "x": 673, "y": 551, "icon": "assets/icons/tree.png" },
-    { "id": "unique_path_2b", "name": "Planet Unlocker", "description": "Reduces the coin cost to unlock new planets by 25%.", "cost": 5, "maxLevel": 1, "dependencies": [ "unique_path_start" ], "x": 574, "y": 580, "icon": "assets/icons/tree.png" },
+    { "id": "unique_path_2a", "name": "Golden Poptarts", "description": "The Golden Poptart's CPS boost lasts 10 seconds longer.", "cost": 3, "maxLevel": 1, "dependencies": [ "unique_path_start" ], "x": 673, "y": 551, "icon": "assets/icons/tree.png" },
+    { "id": "unique_path_2b", "name": "Lucky Paws", "description": "Every click has a 0.5% chance to instantly grant 1 minute worth of CPS.", "cost": 5, "maxLevel": 1, "dependencies": [ "unique_path_start" ], "x": 574, "y": 580, "icon": "assets/icons/tree.png" },
     { "id": "unique_path_2c", "name": "Rebirth Boost", "description": "The base multiplier from Rebirthing is increased from +10% to +12%.", "cost": 2, "maxLevel": 1, "dependencies": [ "unique_path_start" ], "x": 514, "y": 507, "icon": "assets/icons/tree.png" },
     { "id": "unique_path_2d", "name": "Point Doubler", "description": "You have a 5% chance to gain double the Rebirth Points when you rebirth.", "cost": 4, "maxLevel": 1, "dependencies": [ "unique_path_start" ], "x": 545, "y": 428, "icon": "assets/icons/tree.png" },
-    { "id": "unique_path_3a", "name": "Gilded Clicks", "description": "Golden Nyan skin also provides a +5% CPS bonus.", "cost": 5, "maxLevel": 1, "dependencies": [ "unique_path_2a" ], "x": 755, "y": 659, "icon": "assets/icons/tree.png" },
-    { "id": "unique_path_3b", "name": "Free Real Estate", "description": "The first 10 of every building are 10% cheaper.", "cost": 5, "maxLevel": 1, "dependencies": [ "unique_path_2b" ], "x": 527, "y": 730, "icon": "assets/icons/tree.png" },
+    { "id": "unique_path_3a", "name": "Poptart Hunter", "description": "Golden Poptarts have a chance to appear more frequently.", "cost": 5, "maxLevel": 1, "dependencies": [ "unique_path_2a" ], "x": 755, "y": 659, "icon": "assets/icons/tree.png" },
+    { "id": "unique_path_3b", "name": "Jackpot Paws", "description": "Lucky Paws now grants 5 minutes worth of CPS instead of 1.", "cost": 5, "maxLevel": 1, "dependencies": [ "unique_path_2b" ], "x": 527, "y": 730, "icon": "assets/icons/tree.png" },
     { "id": "unique_path_3c", "name": "Cheaper Rebirths", "description": "Reduces the coin requirement for Rebirthing by 10%.", "cost": 5, "maxLevel": 1, "dependencies": [ "unique_path_2c" ], "x": 309, "y": 518, "icon": "assets/icons/tree.png" },
     { "id": "unique_path_3d", "name": "Point Insurance", "description": "Start every run with 1 Rebirth Point.", "cost": 10, "maxLevel": 1, "dependencies": [ "unique_path_2d" ], "x": 434, "y": 338, "icon": "assets/icons/tree.png" },
     { "id": "unique_path_4b", "name": "Cosmic Achievements", "description": "Each achievement unlocked provides a +1% bonus to both CPS and NPC.", "cost": 8, "maxLevel": 1, "dependencies": [ "cps_path_start" ], "x": 1078, "y": 461, "icon": "assets/icons/tree.png" }

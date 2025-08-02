@@ -983,3 +983,81 @@ body.word-mode #game-container::after {
         box-sizing: border-box;
     }
 }
+/* (All previous CSS content) */
+/* ... */
+
+/* ADDED: Styles for the hover tooltip */
+.tooltip {
+    position: absolute;
+    display: none;
+    background-color: rgba(0, 0, 0, 0.85);
+    color: var(--text-light);
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    font-size: 0.9em;
+    z-index: 3000; /* Ensure it's on top of everything */
+    pointer-events: none; /* So it doesn't interfere with mouse events */
+    white-space: nowrap;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+}
+
+/* MODIFIED: Styles for Upgrade Boost Pips */
+.upgrade-name-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.upgrade-boosts {
+    display: flex;
+    gap: 5px;
+}
+
+.boost-pip {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid;
+    transition: all 0.2s ease;
+    cursor: help; /* Default cursor for locked pips */
+}
+
+.boost-pip.locked {
+    border-color: rgba(255, 255, 255, 0.2);
+    background-color: transparent;
+}
+
+.boost-pip.available {
+    border-color: var(--accent-yellow);
+    background-color: rgba(254, 228, 64, 0.2);
+    cursor: pointer;
+}
+
+/* NEW: Affordable state */
+.boost-pip.available.affordable {
+    border-color: var(--accent-green);
+    background-color: rgba(143, 247, 101, 0.2);
+}
+
+.boost-pip.available:hover {
+    box-shadow: 0 0 8px var(--accent-yellow);
+    transform: scale(1.2);
+}
+
+.boost-pip.available.affordable:hover {
+    box-shadow: 0 0 8px var(--accent-green);
+    transform: scale(1.2);
+}
+
+.boost-pip.purchased {
+    border-color: var(--accent-green);
+    background-color: var(--accent-green);
+    cursor: default;
+}
+
+/* Tweak Upgrade Header to accommodate boosts */
+.upgrade-header {
+    align-items: flex-start;
+}

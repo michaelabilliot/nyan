@@ -7,13 +7,17 @@ import {
 import {
     updateDisplay, renderUpgrades, showAchievement, renderShop, updateUpgradeStyles, 
     renderAchievements, navigateCarousel, handleShopAction, renderEasterEggs, renderStats, 
-    updateTabVisibility, setSaveGameCallback
+    updateTabVisibility, setSaveGameCallback, hideModal, showModal, showCustomModal, 
+    createFloatingNumber, setupSettingsModal, applyTheme, spawnGoldenPoptart,
+    showBoostTooltip, hideBoostTooltip
 } from './ui.js';
 import { renderNyanTree, setupNyanTree } from './nyanTree.js';
-import { ACHIEVEMENTS_DATA, SKINS_DATA, UPGRADES_DATA, NYAN_TREE_UPGRADES } from './data.js';
+import { SKINS_DATA, UPGRADES_DATA, NYAN_TREE_UPGRADES } from './data.js';
+import { checkAchievements, ACHIEVEMENTS_DATA } from './achievements.js';
+import { initEasterEggListeners } from './easterEggs.js';
 import { initAudio, playSfx, switchMusic, updateMusicVolume, setMusicEnabled, pauseAllAudio, resumeAllAudio, setUserInteracted, setGlobalMute } from './audio.js';
-import { formatNumber, animateCounter, deepMerge } from './utils.js';
-import { buyUpgrade } from './upgrades.js';
+import { formatNumber, deepMerge } from './utils.js';
+import { buyUpgrade, buyUpgradeBoost } from './upgrades.js';
 
 // --- Module-level variables ---
 let animationFrameId = null;
@@ -28,7 +32,7 @@ const trailImageCache = {};
 // --- DOM Element Caching ---
 let nyanCatImage, nyanCatContainer, rainbowContainer, transitionOverlay, 
     achievementsContent, achievementsModal, easterEggsModal, statsModal,
-    upgradesListEl, gameContainer, boostContainer, mainArea;
+    upgradesListEl, gameContainer, mainArea;
 
 const WORD_TEXTS = ["WORD.", "SHIFT.", "WHATTTT", "OKAY"];
 const getWordText = () => WORD_TEXTS[Math.floor(Math.random() * WORD_TEXTS.length)];
@@ -57,13 +61,11 @@ function animate() {
         }
     }
 
-    // --- Canvas Particle System Logic ---
     if (trailCtx) {
         trailCtx.clearRect(0, 0, trailCanvas.clientWidth, trailCanvas.clientHeight);
 
         const currentSkinData = SKINS_DATA.find(s => s.id === gameState.currentSkin) || SKINS_DATA.find(s => s.id === 'default');
 
-        // 1. SPAWN NEW PARTICLE SEGMENTS
         if (!gameState.isWordMode && currentSkinData.trail && currentSkinData.trail !== '') {
             const trailImage = loadTrailImage(currentSkinData.trail);
 
@@ -90,20 +92,18 @@ function animate() {
                 const numToSpawn = Math.ceil(trailSpeed / (trailWidth > 0 ? trailWidth : trailSpeed));
 
                 for (let i = 0; i < numToSpawn; i++) {
-                    const particle = {
+                    particles.push({
                         x: startX - (i * trailWidth),
                         y: startY,
                         vx: -trailSpeed,
                         image: trailImage,
                         width: trailWidth,
                         height: trailHeight,
-                    };
-                    particles.push(particle);
+                    });
                 }
             }
         }
 
-        // 2. UPDATE AND DRAW EXISTING PARTICLES
         for (let i = particles.length - 1; i >= 0; i--) {
             const p = particles[i];
             p.x += p.vx;
@@ -140,15 +140,6 @@ function stopAnimation() {
     }
 }
 
-function applyTheme(theme, uiTheme) {
-    document.body.classList.toggle('dark-theme', theme === 'dark');
-    
-    document.body.classList.remove('theme-vaporwave', 'theme-matrix');
-    if (uiTheme && uiTheme !== 'default') {
-        document.body.classList.add(`theme-${uiTheme}`);
-    }
-}
-
 function toggleWordMode(enable) {
     if (enable) {
         document.body.classList.add('word-mode');
@@ -181,42 +172,13 @@ export function updateSkinAndMode(skinId) {
     updateTabVisibility(); 
 }
 
-function showModal(modal) {
-    if (modal) modal.style.display = 'flex';
-}
-
-function hideModal(modal) {
-    if (modal) modal.style.display = 'none';
-}
-
-function spawnGoldenPoptart() {
-    playSfx('boost');
-    const poptart = document.createElement('div');
-    poptart.className = 'golden-poptart';
-    poptart.style.top = `${Math.random() * 80 + 10}%`;
-
-    poptart.addEventListener('click', () => {
-        playSfx('boostClick');
-        T({
-            stats: { ...gameState.stats, goldenPoptartsClicked: gameState.stats.goldenPoptartsClicked + 1 }
-        });
-
-        T({ activeBoosts: { ...gameState.activeBoosts, goldenPoptart: 2 } });
-        setTimeout(() => {
-            T({ activeBoosts: { ...gameState.activeBoosts, goldenPoptart: 1 } });
-        }, 30000);
-
-        poptart.remove();
-    }, { once: true });
-
-    boostContainer.appendChild(poptart);
-    setTimeout(() => poptart.remove(), 10000); 
-}
-
 function scheduleNextPoptart() {
-    const minInterval = 5 * 60 * 1000; 
-    const maxInterval = 15 * 60 * 1000; 
-    const nextInterval = Math.random() * (maxInterval - minInterval) + minInterval;
+    // IMPLEMENTED: Poptart Hunter perk makes poptarts more frequent
+    const baseMin = 5 * 60 * 1000; 
+    const baseMax = 15 * 60 * 1000;
+    const multiplier = gameState.nyanTreeUpgrades['unique_path_3a'] ? 0.75 : 1.0; // 25% faster
+    
+    const nextInterval = (Math.random() * (baseMax - baseMin) + baseMin) * multiplier;
     
     setTimeout(() => {
         spawnGoldenPoptart();
@@ -269,7 +231,6 @@ document.addEventListener('DOMContentLoaded', () => {
     statsModal = document.getElementById('stats-modal');
     upgradesListEl = document.getElementById('upgrades-list');
     gameContainer = document.getElementById('game-container');
-    boostContainer = document.getElementById('boost-container');
     mainArea = document.getElementById('main-area');
     
     trailCanvas = document.getElementById('trail-canvas');
@@ -284,12 +245,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const resetGameBtn = document.getElementById('reset-game-btn');
     const shopModal = document.getElementById('shop-modal');
     const settingsModal = document.getElementById('settings-modal');
-    const confirmModal = document.getElementById('confirm-modal');
-    const confirmModalTitle = document.getElementById('confirm-modal-title');
-    const confirmModalMessage = document.getElementById('confirm-modal-message');
-    const confirmModalYes = document.getElementById('confirm-modal-yes');
-    const confirmModalNo = document.getElementById('confirm-modal-no');
-    const confirmModalOk = document.getElementById('confirm-modal-ok');
     const settingsTab = document.getElementById('settings-tab');
     const achievementsTab = document.getElementById('achievements-tab');
     const easterEggsTab = document.getElementById('easter-eggs-tab');
@@ -322,34 +277,23 @@ document.addEventListener('DOMContentLoaded', () => {
     const unlockAllAchievementsCheat = document.getElementById('unlock-all-achievements-cheat');
     const maxNyanTreeCheat = document.getElementById('max-nyan-tree-cheat');
     const addRebirthsCheat = document.getElementById('add-rebirths-cheat');
-
-    let confirmCallback = null;
-
-    function showCustomModal(title, message, callback, isConfirmation = true) {
-        confirmModalTitle.textContent = title;
-        confirmModalMessage.innerHTML = message;
-        confirmCallback = callback;
-
-        if (isConfirmation) {
-            confirmModalYes.style.display = 'inline-block';
-            confirmModalNo.style.display = 'inline-block';
-            confirmModalOk.style.display = 'none';
-        } else {
-            confirmModalYes.style.display = 'none';
-            confirmModalNo.style.display = 'none';
-            confirmModalOk.style.display = 'inline-block';
-        }
-        showModal(confirmModal);
-    }
     
     function handleCatClick(event) {
         playSfx('click');
         const clickPower = calculateClickPower(gameState);
-        const newCoins = gameState.coins + clickPower;
-        const newTotalClicks = gameState.totalClicks + 1;
+        let newCoins = gameState.coins + clickPower;
         
+        // IMPLEMENTED: Lucky Paws perk
+        if (gameState.nyanTreeUpgrades['unique_path_2b'] && Math.random() < 0.005) {
+            const cps = calculateTotalCPS(gameState);
+            const minutes = gameState.nyanTreeUpgrades['unique_path_3b'] ? 5 : 1;
+            const bonusCoins = cps * 60 * minutes;
+            newCoins += bonusCoins;
+            createFloatingNumber(`+${formatNumber(bonusCoins)}!`, event);
+        }
+
         T({ 
-            totalClicks: newTotalClicks,
+            totalClicks: gameState.totalClicks + 1,
             coins: newCoins,
             stats: {
                 ...gameState.stats,
@@ -358,33 +302,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        if (!gameState.isWordMode) {
-            const numberEl = document.createElement('div');
-            numberEl.className = 'floating-number';
-            numberEl.innerHTML = `+${formatNumber(clickPower, true)}`;
-            gameContainer.appendChild(numberEl);
-            const containerRect = gameContainer.getBoundingClientRect();
-            numberEl.style.left = `${event.clientX - containerRect.left - numberEl.offsetWidth / 2}px`;
-            numberEl.style.top = `${event.clientY - containerRect.top - numberEl.offsetHeight / 2}px`;
-            setTimeout(() => numberEl.remove(), 1200);
-        }
-
+        createFloatingNumber(`+${formatNumber(clickPower, true)}`, event);
         checkAchievements('click');
     }
 
     function tick(deltaTime) {
         const cps = calculateTotalCPS(gameState);
         const coinsGained = cps * (deltaTime / 1000);
-        const newCoins = gameState.coins + coinsGained;
         
         T({
-            coins: newCoins,
+            coins: gameState.coins + coinsGained,
             stats: {
                 ...gameState.stats,
                 timePlayed: gameState.stats.timePlayed + (deltaTime / 1000),
                 totalCoinsEarned: gameState.stats.totalCoinsEarned + coinsGained,
             }
         });
+
+        if (gameState.rebirths === 0 && !gameState.hasSeenRebirthGlow) {
+            const cost = getRebirthCost();
+            const pointsGained = calculateRebirthPointsGained(gameState.coins, cost);
+            if (pointsGained > 0) {
+                document.getElementById('rebirth-btn').classList.add('rebirth-available-glow');
+                T({ hasSeenRebirthGlow: true });
+            }
+        }
 
         if (Math.random() < 0.2) {
             updateUpgradeStyles();
@@ -488,6 +430,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function finalizeRebirth() {
         startAnimation();
         switchMusic('main');
+        document.getElementById('rebirth-btn').classList.remove('rebirth-available-glow');
+
         const freshState = getDefaultGameState();
         const newRebirthCount = gameState.rebirths + 1;
 
@@ -495,9 +439,14 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(skin => newRebirthCount >= skin.rebirthUnlock && !gameState.ownedSkins.includes(skin.id))
             .map(skin => skin.id);
 
+        let startingRebirthPoints = gameState.rebirthPoints;
+        if (gameState.nyanTreeUpgrades['unique_path_3d']) {
+            startingRebirthPoints += 1;
+        }
+
         const preservedState = {
             rebirths: newRebirthCount,
-            rebirthPoints: gameState.rebirthPoints,
+            rebirthPoints: startingRebirthPoints,
             isRebirthing: false,
             nyanTreeUpgrades: gameState.nyanTreeUpgrades,
             settings: gameState.settings,
@@ -506,6 +455,7 @@ document.addEventListener('DOMContentLoaded', () => {
             unlockedAchievements: gameState.unlockedAchievements,
             totalClicks: gameState.totalClicks,
             stats: gameState.stats,
+            hasSeenRebirthGlow: true,
         };
 
         T({ ...freshState, ...preservedState });
@@ -536,42 +486,6 @@ document.addEventListener('DOMContentLoaded', () => {
         updateUpgradeStyles();
     }
 
-    const achievementGroups = {
-        click: ['Clicking'],
-        cps: ['Production'],
-        coins: ['Acquisition'],
-        upgrades: ['Construction'],
-        rebirth: ['Prestige'],
-        nyanTree: ['Nyan Tree'],
-        collection: ['Collection'],
-        mastery: ['Mastery'],
-        misc: ['Miscellaneous']
-    };
-
-    function checkAchievements(groupKey = null) {
-        const checkAll = (category) => {
-            Object.keys(ACHIEVEMENTS_DATA[category]).forEach(id => {
-                if (!gameState.unlockedAchievements.includes(id)) {
-                    const achievement = ACHIEVEMENTS_DATA[category][id];
-                    if (typeof achievement.condition === 'function' && achievement.condition(gameState)) {
-                        T({
-                            unlockedAchievements: [...gameState.unlockedAchievements, id],
-                            coins: gameState.coins + (achievement.reward || 0),
-                        });
-                        showAchievement(achievement.name, achievement.description);
-                        checkAchievements('mastery'); 
-                    }
-                }
-            });
-        };
-
-        if (groupKey) {
-            achievementGroups[groupKey].forEach(checkAll);
-        } else { 
-            Object.keys(ACHIEVEMENTS_DATA).forEach(checkAll);
-        }
-    }
-
     function loadGame() {
         const savedStateJSON = localStorage.getItem('nyanClickerSaveV6');
         const defaultState = getDefaultGameState();
@@ -584,15 +498,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const timeOffline = Date.now() - (gameState.lastSaveTime || Date.now());
             const offlineSeconds = Math.min(timeOffline / 1000, 8 * 3600); 
 
-            const offlineCPS = calculateTotalCPS(gameState);
-            const offlineEarnings = offlineCPS * offlineSeconds * 0.1; 
-
-            if (offlineSeconds > 10 && offlineEarnings > 0) {
-                T({
-                    coins: gameState.coins + offlineEarnings,
-                    stats: { ...gameState.stats, totalCoinsEarned: gameState.stats.totalCoinsEarned + offlineEarnings }
-                });
-                showCustomModal('Welcome Back!', `While you were away, you earned ${formatNumber(offlineEarnings)} Nyan Coins!`, null, false);
+            if (gameState.nyanTreeUpgrades['cps_path_4'] && offlineSeconds > 10) {
+                 const offlineCPS = calculateTotalCPS(gameState);
+                 const offlineEarnings = offlineCPS * offlineSeconds * 0.1;
+                 T({
+                     coins: gameState.coins + offlineEarnings,
+                     stats: { ...gameState.stats, totalCoinsEarned: gameState.stats.totalCoinsEarned + offlineEarnings }
+                 });
+                 showCustomModal('Welcome Back!', `While you were away, your Idleverse generated ${formatNumber(offlineEarnings)} Nyan Coins!`, null, false);
             }
         } else {
             T(defaultState);
@@ -635,47 +548,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(gameLoop, 100);
     }
     
-    function setupSettingsModal() {
-        const settingsNav = document.getElementById('settings-nav');
-        const settingsPanels = document.querySelectorAll('.settings-panel');
-        const panelHeaders = document.querySelectorAll('.settings-panel .panel-header');
-
-        // Desktop navigation
-        settingsNav.addEventListener('click', (e) => {
-            if (e.target.classList.contains('nav-btn')) {
-                const panelId = e.target.dataset.forPanel;
-                
-                // MODIFIED: Added a check to prevent crash if no active button is found
-                const currentActiveNav = settingsNav.querySelector('.active');
-                if (currentActiveNav) {
-                    currentActiveNav.classList.remove('active');
-                }
-                e.target.classList.add('active');
-                
-                const currentActivePanel = document.querySelector('.settings-panel.active');
-                if (currentActivePanel) {
-                    currentActivePanel.classList.remove('active');
-                }
-                document.getElementById(`settings-panel-${panelId}`).classList.add('active');
-            }
-        });
-
-        // Mobile accordion
-        panelHeaders.forEach(header => {
-            header.addEventListener('click', () => {
-                const panel = header.parentElement;
-                
-                if (panel.classList.contains('active')) {
-                    panel.classList.remove('active');
-                } else {
-                    settingsPanels.forEach(p => p.classList.remove('active'));
-                    panel.classList.add('active');
-                }
-            });
-        });
-    }
-
-
     function init() {
         setSaveGameCallback(saveGame);
         loadGame();
@@ -706,63 +578,46 @@ document.addEventListener('DOMContentLoaded', () => {
         
         upgradesListEl.addEventListener('click', (e) => {
             const upgradeItem = e.target.closest('.upgrade-item');
-            if (upgradeItem) {
-                buyUpgrade(upgradeItem.dataset.id);
-                checkAchievements('upgrades');
-                checkAchievements('misc');
-            }
-        });
+            if (!upgradeItem) return;
 
-        achievementsContent.addEventListener('click', (e) => {
-            const card = e.target.closest('.achievement-card.clickable');
-            if (card && card.dataset.id === 'misc_words_apart' && !gameState.isWordMode) {
-                playSfx('flash');
-                transitionOverlay.style.backgroundColor = '#FFF';
-                transitionOverlay.style.transition = 'opacity 0.2s ease-in';
-
-                transitionOverlay.addEventListener('transitionend', () => {
-                    if (!gameState.ownedSkins.includes('word')) {
-                        T({ ownedSkins: [...gameState.ownedSkins, 'word'] });
-                    }
-                    updateSkinAndMode('word');
-                    saveGame(true);
-                    hideModal(achievementsModal);
-
-                    transitionOverlay.style.transition = 'opacity 1.2s ease-out';
-                    transitionOverlay.classList.remove('active');
-                    
-                    transitionOverlay.addEventListener('transitionend', () => {
-                        transitionOverlay.style.backgroundColor = '#000';
-                        transitionOverlay.style.transition = 'opacity 1s ease-in-out';
-                    }, { once: true });
-                }, { once: true });
-                transitionOverlay.classList.add('active');
-            }
-        });
-
-        easterEggsModal.addEventListener('click', (e) => {
-            if (e.target.classList.contains('easter-egg-equip-btn')) {
-                const card = e.target.closest('.achievement-card');
-                if (card) {
-                    const skinId = card.dataset.skinId;
-                    if (skinId && gameState.currentSkin !== skinId) {
-                        playSfx('skinBuy');
-                        updateSkinAndMode(skinId);
-                        saveGame(true);
-                        renderEasterEggs();
-                    }
+            const boostPip = e.target.closest('.boost-pip.available');
+            
+            if (boostPip) {
+                const upgradeId = upgradeItem.dataset.id;
+                const boostIndex = parseInt(boostPip.dataset.boostIndex, 10);
+                const success = buyUpgradeBoost(upgradeId, boostIndex);
+                if (success) {
+                    playSfx('upgradeBuy');
+                    renderUpgrades();
+                }
+            } else {
+                const success = buyUpgrade(upgradeItem.dataset.id);
+                if (success) {
+                    playSfx('upgradeBuy');
+                    renderUpgrades(); 
+                    checkAchievements('upgrades');
+                    checkAchievements('misc');
                 }
             }
         });
+
+        upgradesListEl.addEventListener('mouseover', (e) => {
+            if (e.target.matches('.boost-pip.available, .boost-pip.locked')) {
+                showBoostTooltip(e.target);
+            }
+        });
+        upgradesListEl.addEventListener('mouseout', (e) => {
+            if (e.target.matches('.boost-pip.available, .boost-pip.locked')) {
+                hideBoostTooltip();
+            }
+        });
+
+        initEasterEggListeners(achievementsContent, easterEggsModal, transitionOverlay, achievementsModal, saveGame);
         
         document.querySelectorAll('.close-modal-x').forEach(btn => btn.addEventListener('click', (e) => {
             hideModal(e.target.closest('.modal-overlay'));
         }));
         
-        confirmModalYes.addEventListener('click', () => { if (confirmCallback) confirmCallback(true); hideModal(confirmModal); });
-        confirmModalNo.addEventListener('click', () => { if (confirmCallback) confirmCallback(false); hideModal(confirmModal); });
-        confirmModalOk.addEventListener('click', () => hideModal(confirmModal));
-
         musicVolumeSlider.addEventListener('input', (e) => { T({ settings: { ...gameState.settings, musicVolume: parseFloat(e.target.value) / 100 } }); updateMusicVolume(); });
         sfxVolumeSlider.addEventListener('input', (e) => { T({ settings: { ...gameState.settings, sfxVolume: parseFloat(e.target.value) / 100 } }); });
         sfxToggle.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, sfx: e.target.checked } }); });
@@ -804,7 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
         add1qCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e15 }); });
         addRebirthPointsCheat.addEventListener('click', () => { T({ rebirthPoints: gameState.rebirthPoints + 10 }); renderNyanTree(); });
         addRebirthsCheat.addEventListener('click', () => { T({ rebirths: gameState.rebirths + 5 }); renderUpgrades(); });
-        get249UpgradesCheat.addEventListener('click', () => { const newUpgrades = { ...gameState.upgrades }; UPGRADES_DATA.forEach(upgrade => { newUpgrades[upgrade.id] = { owned: 249 }; }); T({ upgrades: newUpgrades }); renderUpgrades(); updateUpgradeStyles(); });
+        get249UpgradesCheat.addEventListener('click', () => { const newUpgrades = { ...gameState.upgrades }; UPGRADES_DATA.forEach(upgrade => { newUpgrades[upgrade.id] = { owned: 249, boosts: 0 }; }); T({ upgrades: newUpgrades }); renderUpgrades(); });
         unlockAllAchievementsCheat.addEventListener('click', () => { const allAchievementIds = []; Object.values(ACHIEVEMENTS_DATA).forEach(category => Object.keys(category).forEach(id => allAchievementIds.push(id))); T({ unlockedAchievements: allAchievementIds }); renderAchievements(); });
         maxNyanTreeCheat.addEventListener('click', () => { const maxedTree = {}; NYAN_TREE_UPGRADES.forEach(upgrade => maxedTree[upgrade.id] = upgrade.maxLevel); T({ nyanTreeUpgrades: maxedTree }); renderNyanTree(); });
         
@@ -837,7 +692,6 @@ document.addEventListener('DOMContentLoaded', () => {
         setInterval(() => saveGame(false), 30000);
         checkAchievements(); 
         renderUpgrades(); 
-        updateUpgradeStyles();
 
         console.log("Nyan Cat Clicker Initialized.");
     }

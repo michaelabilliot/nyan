@@ -1,6 +1,7 @@
 import { gameState, T } from './state.js';
-import { calculateTotalCPS, getGlobalMultiplier, getPurchaseMultiplier } from './core.js';
-import { UPGRADES_DATA, SKINS_DATA, ACHIEVEMENTS_DATA } from './data.js';
+import { calculateTotalCPS, getGlobalMultiplier, getPurchaseMultiplier, getBuildingCostDiscount } from './core.js';
+import { UPGRADES_DATA, SKINS_DATA } from './data.js';
+import { ACHIEVEMENTS_DATA } from './achievements.js';
 import { buyUpgrade } from './upgrades.js';
 import { calculateCostForAmount, calculateMaxAffordable, formatNumber } from './utils.js';
 import { playSfx } from './audio.js';
@@ -15,31 +16,178 @@ const achievementToast = document.getElementById('achievement-toast');
 const nyanTreeTab = document.getElementById('nyan-tree-tab');
 const settingsTab = document.getElementById('settings-tab');
 const statsTab = document.getElementById('stats-tab');
-const easterEggsTab = document.getElementById('easter-eggs-tab'); // ADDED
+const easterEggsTab = document.getElementById('easter-eggs-tab');
 const achievementsContent = document.getElementById('achievements-content');
 const shopBuyBtn = document.getElementById('shop-buy-btn');
 const skinCarouselTrack = document.getElementById('skin-carousel-track');
 const skinDetailsPanel = document.getElementById('skin-details-panel');
 const statsContent = document.getElementById('stats-content');
+const gameContainer = document.getElementById('game-container');
+const boostContainer = document.getElementById('boost-container');
+const confirmModal = document.getElementById('confirm-modal');
+const confirmModalTitle = document.getElementById('confirm-modal-title');
+const confirmModalMessage = document.getElementById('confirm-modal-message');
+const confirmModalYes = document.getElementById('confirm-modal-yes');
+const confirmModalNo = document.getElementById('confirm-modal-no');
+const confirmModalOk = document.getElementById('confirm-modal-ok');
+const boostTooltip = document.getElementById('upgrade-boost-tooltip');
 
 let currentSkinIndex = 0;
-let saveGameCallback = () => {}; // Placeholder for the saveGame function
+let saveGameCallback = () => {};
 
+// --- MOVED FROM main.js ---
+export function applyTheme(theme, uiTheme) {
+    document.body.classList.toggle('dark-theme', theme === 'dark');
+    
+    document.body.classList.remove('theme-vaporwave', 'theme-matrix');
+    if (uiTheme && uiTheme !== 'default') {
+        document.body.classList.add(`theme-${uiTheme}`);
+    }
+}
+
+export function spawnGoldenPoptart() {
+    playSfx('boost');
+    const poptart = document.createElement('div');
+    poptart.className = 'golden-poptart';
+    poptart.style.top = `${Math.random() * 80 + 10}%`;
+
+    poptart.addEventListener('click', () => {
+        playSfx('boostClick');
+        T({
+            stats: { ...gameState.stats, goldenPoptartsClicked: gameState.stats.goldenPoptartsClicked + 1 }
+        });
+
+        T({ activeBoosts: { ...gameState.activeBoosts, goldenPoptart: 2 } });
+        setTimeout(() => {
+            T({ activeBoosts: { ...gameState.activeBoosts, goldenPoptart: 1 } });
+        }, 30000);
+
+        poptart.remove();
+    }, { once: true });
+
+    boostContainer.appendChild(poptart);
+    setTimeout(() => poptart.remove(), 10000); 
+}
+
+export function showCustomModal(title, message, callback, isConfirmation = true) {
+    confirmModalTitle.textContent = title;
+    confirmModalMessage.innerHTML = message;
+    
+    confirmModalYes.onclick = () => { if (callback) callback(true); hideModal(confirmModal); };
+    confirmModalNo.onclick = () => { if (callback) callback(false); hideModal(confirmModal); };
+    confirmModalOk.onclick = () => hideModal(confirmModal);
+
+
+    if (isConfirmation) {
+        confirmModalYes.style.display = 'inline-block';
+        confirmModalNo.style.display = 'inline-block';
+        confirmModalOk.style.display = 'none';
+    } else {
+        confirmModalYes.style.display = 'none';
+        confirmModalNo.style.display = 'none';
+        confirmModalOk.style.display = 'inline-block';
+    }
+    showModal(confirmModal);
+}
+
+export function createFloatingNumber(text, event) {
+    if (gameState.isWordMode) return;
+
+    const numberEl = document.createElement('div');
+    numberEl.className = 'floating-number';
+    numberEl.innerHTML = text;
+    gameContainer.appendChild(numberEl);
+    const containerRect = gameContainer.getBoundingClientRect();
+    numberEl.style.left = `${event.clientX - containerRect.left - numberEl.offsetWidth / 2}px`;
+    numberEl.style.top = `${event.clientY - containerRect.top - numberEl.offsetHeight / 2}px`;
+    setTimeout(() => numberEl.remove(), 1200);
+}
+
+export function setupSettingsModal() {
+    const settingsNav = document.getElementById('settings-nav');
+    const settingsPanels = document.querySelectorAll('.settings-panel');
+    const panelHeaders = document.querySelectorAll('.settings-panel .panel-header');
+
+    settingsNav.addEventListener('click', (e) => {
+        if (e.target.classList.contains('nav-btn')) {
+            const panelId = e.target.dataset.forPanel;
+            
+            const currentActiveNav = settingsNav.querySelector('.active');
+            if (currentActiveNav) currentActiveNav.classList.remove('active');
+            e.target.classList.add('active');
+            
+            const currentActivePanel = document.querySelector('.settings-panel.active');
+            if (currentActivePanel) currentActivePanel.classList.remove('active');
+            document.getElementById(`settings-panel-${panelId}`).classList.add('active');
+        }
+    });
+
+    panelHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const panel = header.parentElement;
+            
+            if (panel.classList.contains('active')) {
+                panel.classList.remove('active');
+            } else {
+                settingsPanels.forEach(p => p.classList.remove('active'));
+                panel.classList.add('active');
+            }
+        });
+    });
+}
+
+// --- Tooltip Management Functions ---
+export function showBoostTooltip(pipElement) {
+    const upgradeItem = pipElement.closest('.upgrade-item');
+    if (!upgradeItem) return;
+
+    const upgradeId = upgradeItem.dataset.id;
+    const boostIndex = parseInt(pipElement.dataset.boostIndex, 10);
+    const upgrade = UPGRADES_DATA.find(u => u.id === upgradeId);
+    if (!upgrade) return;
+
+    if (pipElement.classList.contains('locked')) {
+        const requiredAmount = (boostIndex + 1) * 25;
+        boostTooltip.innerHTML = `Requires ${requiredAmount} of this upgrade`;
+    } else {
+        const cost = upgrade.baseCost * 100 * Math.pow(25, boostIndex);
+        boostTooltip.innerHTML = `Cost: ${formatNumber(cost)}`;
+    }
+
+    const pipRect = pipElement.getBoundingClientRect();
+    boostTooltip.style.display = 'block';
+
+    const tooltipRect = boostTooltip.getBoundingClientRect();
+    boostTooltip.style.top = `${pipRect.top - tooltipRect.height - 5}px`;
+    boostTooltip.style.left = `${pipRect.left + (pipRect.width / 2) - (tooltipRect.width / 2)}px`;
+}
+
+export function hideBoostTooltip() {
+    boostTooltip.style.display = 'none';
+}
+
+// --- Original ui.js functions below ---
 export function setSaveGameCallback(callback) {
     saveGameCallback = callback;
+}
+
+export function showModal(modal) {
+    if (modal) modal.style.display = 'flex';
+}
+
+export function hideModal(modal) {
+    if (modal) modal.style.display = 'none';
 }
 
 function getVisibleShopSkins() {
     return SKINS_DATA.filter(s => !s.secret);
 }
 
-// MODIFIED: Renamed function and added logic for easter egg tab
 export function updateTabVisibility() {
     settingsTab.style.display = 'flex';
     statsTab.style.display = 'flex';
     nyanTreeTab.style.display = gameState.rebirths > 0 ? 'flex' : 'none';
 
-    // Check if any secret skins have been unlocked
     const hasFoundSecrets = SKINS_DATA.some(s => s.secret && gameState.ownedSkins.includes(s.id));
     easterEggsTab.style.display = hasFoundSecrets ? 'flex' : 'none';
 }
@@ -60,7 +208,7 @@ export function updateDisplay() {
         document.querySelector("#npc-boost-display").textContent = `${boostPercentage.toFixed(2)}%`;
         rebirthBtn.innerHTML = `Rebirth`;
     }
-    updateTabVisibility(); // MODIFIED: Call the renamed function
+    updateTabVisibility();
 }
 
 export function updateUpgradeStyles() {
@@ -72,20 +220,24 @@ export function updateUpgradeStyles() {
         const upgrade = UPGRADES_DATA.find(u => u.id === upgradeId);
         if (!upgrade) continue;
         
-        const owned = gameState.upgrades[upgradeId]?.owned || 0;
+        // BUG FIX: Create a temporary discounted version of the upgrade for all UI calculations.
+        const discount = getBuildingCostDiscount();
+        const discountedUpgrade = { ...upgrade, baseCost: upgrade.baseCost * discount };
+
+        const upgradeState = gameState.upgrades[upgradeId] || { owned: 0, boosts: 0 };
         
         const ownedEl = itemEl.querySelector('.upgrade-owned');
-        ownedEl.textContent = gameState.isWordMode ? gameState.wordModeText.owned : owned;
+        ownedEl.textContent = gameState.isWordMode ? gameState.wordModeText.owned : upgradeState.owned;
 
         let totalCost;
         let amountToBuy;
 
         if (multiplier === 'ALL') {
-            amountToBuy = calculateMaxAffordable(upgrade, owned, gameState.coins);
-            totalCost = calculateCostForAmount(upgrade, owned, amountToBuy);
+            amountToBuy = calculateMaxAffordable(discountedUpgrade, upgradeState.owned, gameState.coins);
+            totalCost = calculateCostForAmount(discountedUpgrade, upgradeState.owned, amountToBuy);
         } else {
             amountToBuy = multiplier;
-            totalCost = calculateCostForAmount(upgrade, owned, amountToBuy);
+            totalCost = calculateCostForAmount(discountedUpgrade, upgradeState.owned, amountToBuy);
         }
 
         const costEl = itemEl.querySelector('.upgrade-cost');
@@ -104,17 +256,37 @@ export function updateUpgradeStyles() {
         
         const contributionEl = itemEl.querySelector('.upgrade-contribution');
         if (contributionEl && !gameState.isWordMode) {
-            const totalContribution = upgrade.power * owned;
+            const purchasedBoosts = upgradeState.boosts || 0;
+            const boostMultiplier = Math.pow(1.25, purchasedBoosts);
+            const totalContribution = upgrade.power * upgradeState.owned * boostMultiplier;
             const powerType = upgrade.type === 'click' ? 'NPC' : 'CPS';
             contributionEl.innerHTML = `Total: +${formatNumber(totalContribution)} ${powerType}`;
         }
-
 
         if (gameState.coins >= totalCost && amountToBuy > 0) {
             itemEl.classList.remove('disabled');
         } else {
             itemEl.classList.add('disabled');
         }
+        
+        const purchasedBoosts = upgradeState.boosts || 0;
+        const availableBoosts = Math.floor(upgradeState.owned / 25);
+        const boostPips = itemEl.querySelectorAll('.boost-pip');
+
+        boostPips.forEach(pip => {
+            const i = parseInt(pip.dataset.boostIndex, 10);
+            let pipClass = 'locked';
+            if (i < purchasedBoosts) {
+                pipClass = 'purchased';
+            } else if (i < availableBoosts) {
+                pipClass = 'available';
+                const cost = upgrade.baseCost * 100 * Math.pow(25, i);
+                if (gameState.coins >= cost) {
+                    pipClass += ' affordable';
+                }
+            }
+            pip.className = `boost-pip ${pipClass}`;
+        });
     }
 }
 
@@ -125,16 +297,40 @@ export function renderUpgrades() {
         if (gameState.rebirths < (upgrade.rebirthUnlock || 0)) {
             return;
         }
+        if (upgrade.nyanTreeUnlock && !gameState.nyanTreeUpgrades[upgrade.nyanTreeUnlock]) {
+            return;
+        }
 
-        const owned = gameState.upgrades[upgrade.id]?.owned || 0;
+        const upgradeState = gameState.upgrades[upgrade.id] || { owned: 0, boosts: 0 };
         const itemEl = document.createElement('div');
         itemEl.className = 'upgrade-item';
         itemEl.dataset.id = upgrade.id;
 
+        let boostPipsHTML = '';
+        const availableBoosts = Math.floor(upgradeState.owned / 25);
+        const purchasedBoosts = upgradeState.boosts || 0;
+
+        for (let i = 0; i < 4; i++) {
+            let pipClass = 'locked';
+            if (i < purchasedBoosts) {
+                pipClass = 'purchased';
+            } else if (i < availableBoosts) {
+                pipClass = 'available';
+                const cost = upgrade.baseCost * 100 * Math.pow(25, i);
+                if (gameState.coins >= cost) {
+                    pipClass += ' affordable';
+                }
+            }
+            boostPipsHTML += `<div class="boost-pip ${pipClass}" data-boost-index="${i}"></div>`;
+        }
+
         itemEl.innerHTML = `
             <div class="upgrade-header">
-                <span class="upgrade-name">${gameState.isWordMode ? gameState.wordModeText.upgradeNames : upgrade.name}</span>
-                <span class="upgrade-owned">${owned}</span>
+                <div class="upgrade-name-container">
+                    <span class="upgrade-name">${gameState.isWordMode ? gameState.wordModeText.upgradeNames : upgrade.name}</span>
+                    <div class="upgrade-boosts">${boostPipsHTML}</div>
+                </div>
+                <span class="upgrade-owned">${upgradeState.owned}</span>
             </div>
             <p class="upgrade-desc">${gameState.isWordMode ? gameState.wordModeText.descriptions : upgrade.description}</p>
             <div class="upgrade-info">
@@ -213,7 +409,7 @@ export function handleShopAction() {
         } else {
             playSfx('skinBuy');
             updateSkinAndMode(selectedSkin.id);
-            saveGameCallback(true); // MODIFIED: Manually save when equipping a skin.
+            saveGameCallback(true);
         }
     }
     
@@ -245,18 +441,17 @@ export function renderShop() {
         skinCarouselTrack.appendChild(item);
     });
 
-    // --- ADDED: Touch swipe functionality for the shop carousel ---
     let touchStartX = 0;
     let touchEndX = 0;
     const carouselViewport = document.getElementById('skin-carousel-viewport');
 
     const handleSwipe = () => {
-        const threshold = 50; // Minimum swipe distance in pixels
+        const threshold = 50;
         if (touchEndX < touchStartX - threshold) {
-            navigateCarousel(1); // Swiped left
+            navigateCarousel(1);
         }
         if (touchEndX > touchStartX + threshold) {
-            navigateCarousel(-1); // Swiped right
+            navigateCarousel(-1);
         }
     };
 
@@ -268,7 +463,6 @@ export function renderShop() {
         touchEndX = e.changedTouches[0].screenX;
         handleSwipe();
     });
-    // --- END: Touch swipe functionality ---
     
     currentSkinIndex = visibleSkins.findIndex(s => s.id === gameState.currentSkin);
     if (currentSkinIndex === -1) currentSkinIndex = 0;
