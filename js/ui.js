@@ -244,6 +244,31 @@ export function renderShop() {
 
         skinCarouselTrack.appendChild(item);
     });
+
+    // --- ADDED: Touch swipe functionality for the shop carousel ---
+    let touchStartX = 0;
+    let touchEndX = 0;
+    const carouselViewport = document.getElementById('skin-carousel-viewport');
+
+    const handleSwipe = () => {
+        const threshold = 50; // Minimum swipe distance in pixels
+        if (touchEndX < touchStartX - threshold) {
+            navigateCarousel(1); // Swiped left
+        }
+        if (touchEndX > touchStartX + threshold) {
+            navigateCarousel(-1); // Swiped right
+        }
+    };
+
+    carouselViewport.addEventListener('touchstart', (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true });
+
+    carouselViewport.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        handleSwipe();
+    });
+    // --- END: Touch swipe functionality ---
     
     currentSkinIndex = visibleSkins.findIndex(s => s.id === gameState.currentSkin);
     if (currentSkinIndex === -1) currentSkinIndex = 0;

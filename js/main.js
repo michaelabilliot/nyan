@@ -20,22 +20,20 @@ let animationFrameId = null;
 let wordGlitchInterval = null;
 let lastTickTime = performance.now();
 
-// --- NEW: Canvas Particle System Variables ---
+// --- Canvas Particle System Variables ---
 let trailCanvas, trailCtx;
 let particles = [];
-// Cache for loaded trail images to prevent reloading
 const trailImageCache = {};
 
 // --- DOM Element Caching ---
 let nyanCatImage, nyanCatContainer, rainbowContainer, transitionOverlay, 
     achievementsContent, achievementsModal, easterEggsModal, statsModal,
-    upgradesListEl, gameContainer, boostContainer;
+    upgradesListEl, gameContainer, boostContainer, mainArea;
 
 const WORD_TEXTS = ["WORD.", "SHIFT.", "WHATTTT", "OKAY"];
 const getWordText = () => WORD_TEXTS[Math.floor(Math.random() * WORD_TEXTS.length)];
 
 
-// NEW: Function to load and cache trail images
 function loadTrailImage(src) {
     if (trailImageCache[src]) {
         return trailImageCache[src];
@@ -59,9 +57,8 @@ function animate() {
         }
     }
 
-    // --- REVISED: Canvas Particle System Logic ---
+    // --- Canvas Particle System Logic ---
     if (trailCtx) {
-        // Clear the canvas for the new frame
         trailCtx.clearRect(0, 0, trailCanvas.clientWidth, trailCanvas.clientHeight);
 
         const currentSkinData = SKINS_DATA.find(s => s.id === gameState.currentSkin) || SKINS_DATA.find(s => s.id === 'default');
@@ -70,38 +67,33 @@ function animate() {
         if (!gameState.isWordMode && currentSkinData.trail && currentSkinData.trail !== '') {
             const trailImage = loadTrailImage(currentSkinData.trail);
 
-            // Only proceed if the image has been loaded by the browser
-            if (trailImage.complete && trailImage.naturalHeight !== 0) {
+            if (trailImage.complete && trailImage.naturalHeight !== 0 && nyanCatImage.offsetWidth > 0) {
                 const catRect = nyanCatContainer.getBoundingClientRect();
-                const containerRect = gameContainer.getBoundingClientRect();
+                const mainAreaRect = mainArea.getBoundingClientRect();
                 
-                // Use trailHeight from data, otherwise default to the image's natural height
-                const trailHeight = currentSkinData.trailHeight || trailImage.naturalHeight;
-                // Calculate the segment's width to maintain the aspect ratio of the original slice image
-                const trailWidth = trailImage.naturalWidth * (trailHeight / trailImage.naturalHeight);
+                const BASE_CAT_WIDTH = 450;
+                const scale = nyanCatImage.offsetWidth / BASE_CAT_WIDTH;
+
+                const trailHeight = (currentSkinData.trailHeight || trailImage.naturalHeight) * scale;
+                const trailWidth = (trailImage.naturalWidth * (trailHeight / trailImage.naturalHeight));
 
                 let startX, startY;
                 if (currentSkinData.trailOrigin) {
-                    startX = (catRect.left - containerRect.left) + currentSkinData.trailOrigin.x;
-                    startY = (catRect.top - containerRect.top) + currentSkinData.trailOrigin.y;
+                    startX = (catRect.left - mainAreaRect.left) + (currentSkinData.trailOrigin.x * scale);
+                    startY = (catRect.top - mainAreaRect.top) + (currentSkinData.trailOrigin.y * scale);
                 } else {
-                    startX = catRect.left - containerRect.left + (catRect.width / 2);
-                    startY = catRect.top - containerRect.top + (catRect.height / 2);
+                    startX = (catRect.left - mainAreaRect.left) + (catRect.width / 2);
+                    startY = (catRect.top - mainAreaRect.top) + (catRect.height / 2);
                 }
                 
-                // Define how fast the trail moves to the left
-                const trailSpeed = 10; // pixels per frame
-
-                // To prevent gaps, spawn enough segments to fill the space moved in one frame.
-                // We use Math.ceil to ensure we always fill the gap, even with fractional results.
-                const numToSpawn = Math.ceil(trailSpeed / trailWidth);
+                const trailSpeed = 10; 
+                const numToSpawn = Math.ceil(trailSpeed / (trailWidth > 0 ? trailWidth : trailSpeed));
 
                 for (let i = 0; i < numToSpawn; i++) {
                     const particle = {
-                        // Position new segments one after another to fill the gap
                         x: startX - (i * trailWidth),
                         y: startY,
-                        vx: -trailSpeed, // All segments move at the same speed
+                        vx: -trailSpeed,
                         image: trailImage,
                         width: trailWidth,
                         height: trailHeight,
@@ -114,21 +106,16 @@ function animate() {
         // 2. UPDATE AND DRAW EXISTING PARTICLES
         for (let i = particles.length - 1; i >= 0; i--) {
             const p = particles[i];
-            
-            // Update position
             p.x += p.vx;
             
-            // Remove if it's moved off-screen
             if (p.x < -p.width) {
                 particles.splice(i, 1);
                 continue;
             }
             
-            // Draw the trail image slice, centered vertically on its y-coordinate
             trailCtx.drawImage(p.image, p.x, p.y - p.height / 2, p.width, p.height);
         }
     }
-    // --- END: Canvas Particle System Logic ---
     
     updateDisplay();
     animationFrameId = requestAnimationFrame(animate);
@@ -147,7 +134,6 @@ function stopAnimation() {
         clearInterval(wordGlitchInterval);
         wordGlitchInterval = null;
     }
-    // ADDED: Clear particles when stopping to prevent a burst on resume
     particles = [];
     if (trailCtx) {
         trailCtx.clearRect(0, 0, trailCanvas.clientWidth, trailCanvas.clientHeight);
@@ -238,37 +224,34 @@ function scheduleNextPoptart() {
     }, nextInterval);
 }
 
-// MODIFIED: Added image smoothing properties to keep pixel art sharp.
 function resizeCanvas() {
-    if (!trailCanvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = trailCanvas.getBoundingClientRect();
-    trailCanvas.width = rect.width * dpr;
-    trailCanvas.height = rect.height * dpr;
-    if (trailCtx) {
-        trailCtx.scale(dpr, dpr);
-        // This is the magic! It tells the canvas not to blur pixels when scaling.
-        trailCtx.imageSmoothingEnabled = false;
-        trailCtx.mozImageSmoothingEnabled = false;
-        trailCtx.webkitImageSmoothingEnabled = false;
-        trailCtx.msImageSmoothingEnabled = false;
-    }
+    setTimeout(() => {
+        if (!trailCanvas) return;
+        const dpr = window.devicePixelRatio || 1;
+        const rect = trailCanvas.getBoundingClientRect();
+        trailCanvas.width = rect.width * dpr;
+        trailCanvas.height = rect.height * dpr;
+        if (trailCtx) {
+            trailCtx.scale(dpr, dpr);
+            trailCtx.imageSmoothingEnabled = false;
+            trailCtx.mozImageSmoothingEnabled = false;
+            trailCtx.webkitImageSmoothingEnabled = false;
+            trailCtx.msImageSmoothingEnabled = false;
+        }
+    }, 0);
 }
 
-// This function needs to be defined in main.js so it can be passed to other modules.
 function saveGame(isManual = false) {
     T({ lastSaveTime: Date.now() });
 
-    // MODIFIED: Autosaves should not store the current skin, but manual saves should.
-    // This prevents live-server reloads from reverting your skin choice during development.
     if (isManual) {
         localStorage.setItem('nyanClickerSaveV6', JSON.stringify(gameState));
-        if (document.getElementById('achievement-toast')) { // Check if UI is ready
+        if (document.getElementById('achievement-toast')) {
             showAchievement("Game Saved!", "Your progress has been safely stored.");
         }
     } else {
         const autoSaveState = { ...gameState };
-        delete autoSaveState.currentSkin; // Don't save current skin on auto-save
+        delete autoSaveState.currentSkin;
         localStorage.setItem('nyanClickerSaveV6', JSON.stringify(autoSaveState));
     }
 }
@@ -287,8 +270,8 @@ document.addEventListener('DOMContentLoaded', () => {
     upgradesListEl = document.getElementById('upgrades-list');
     gameContainer = document.getElementById('game-container');
     boostContainer = document.getElementById('boost-container');
+    mainArea = document.getElementById('main-area');
     
-    // NEW: Assign canvas elements
     trailCanvas = document.getElementById('trail-canvas');
     trailCtx = trailCanvas.getContext('2d');
     
@@ -386,8 +369,6 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => numberEl.remove(), 1200);
         }
 
-        // BUG FIX: Immediately update upgrade styles after a click to reflect new coin total.
-        updateUpgradeStyles();
         checkAchievements('click');
     }
 
@@ -404,6 +385,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 totalCoinsEarned: gameState.stats.totalCoinsEarned + coinsGained,
             }
         });
+
+        if (Math.random() < 0.2) {
+            updateUpgradeStyles();
+        }
         
         if (Math.random() < 0.1) {
              checkAchievements('cps');
@@ -634,6 +619,7 @@ document.addEventListener('DOMContentLoaded', () => {
         switchMusic('main');
         document.removeEventListener('mousedown', startMusicOnFirstInteraction);
         document.removeEventListener('keydown', startMusicOnFirstInteraction);
+        document.removeEventListener('touchstart', startMusicOnFirstInteraction);
     }
 
     function handleWindowFocus() { resumeAllAudio(); startAnimation(); }
@@ -648,14 +634,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTimeout(gameLoop, 100);
     }
+    
+    function setupSettingsModal() {
+        const settingsNav = document.getElementById('settings-nav');
+        const settingsPanels = document.querySelectorAll('.settings-panel');
+        const panelHeaders = document.querySelectorAll('.settings-panel .panel-header');
+
+        // Desktop navigation
+        settingsNav.addEventListener('click', (e) => {
+            if (e.target.classList.contains('nav-btn')) {
+                const panelId = e.target.dataset.forPanel;
+                
+                // MODIFIED: Added a check to prevent crash if no active button is found
+                const currentActiveNav = settingsNav.querySelector('.active');
+                if (currentActiveNav) {
+                    currentActiveNav.classList.remove('active');
+                }
+                e.target.classList.add('active');
+                
+                const currentActivePanel = document.querySelector('.settings-panel.active');
+                if (currentActivePanel) {
+                    currentActivePanel.classList.remove('active');
+                }
+                document.getElementById(`settings-panel-${panelId}`).classList.add('active');
+            }
+        });
+
+        // Mobile accordion
+        panelHeaders.forEach(header => {
+            header.addEventListener('click', () => {
+                const panel = header.parentElement;
+                
+                if (panel.classList.contains('active')) {
+                    panel.classList.remove('active');
+                } else {
+                    settingsPanels.forEach(p => p.classList.remove('active'));
+                    panel.classList.add('active');
+                }
+            });
+        });
+    }
+
 
     function init() {
-        setSaveGameCallback(saveGame); // Pass the saveGame function to the UI module
+        setSaveGameCallback(saveGame);
         loadGame();
         initAudio(); 
         
         document.addEventListener('mousedown', startMusicOnFirstInteraction);
         document.addEventListener('keydown', startMusicOnFirstInteraction);
+        document.addEventListener('touchstart', startMusicOnFirstInteraction);
         window.addEventListener('focus', handleWindowFocus);
         window.addEventListener('blur', handleWindowBlur);
         window.addEventListener('resize', resizeCanvas);
@@ -681,7 +709,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (upgradeItem) {
                 buyUpgrade(upgradeItem.dataset.id);
                 checkAchievements('upgrades');
-                updateUpgradeStyles(); 
+                checkAchievements('misc');
             }
         });
 
@@ -697,7 +725,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         T({ ownedSkins: [...gameState.ownedSkins, 'word'] });
                     }
                     updateSkinAndMode('word');
-                    saveGame(true); // Manually save this special skin unlock
+                    saveGame(true);
                     hideModal(achievementsModal);
 
                     transitionOverlay.style.transition = 'opacity 1.2s ease-out';
@@ -720,7 +748,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (skinId && gameState.currentSkin !== skinId) {
                         playSfx('skinBuy');
                         updateSkinAndMode(skinId);
-                        saveGame(true); // Manually save when equipping a secret skin
+                        saveGame(true);
                         renderEasterEggs();
                     }
                 }
@@ -735,7 +763,6 @@ document.addEventListener('DOMContentLoaded', () => {
         confirmModalNo.addEventListener('click', () => { if (confirmCallback) confirmCallback(false); hideModal(confirmModal); });
         confirmModalOk.addEventListener('click', () => hideModal(confirmModal));
 
-        // Settings Listeners
         musicVolumeSlider.addEventListener('input', (e) => { T({ settings: { ...gameState.settings, musicVolume: parseFloat(e.target.value) / 100 } }); updateMusicVolume(); });
         sfxVolumeSlider.addEventListener('input', (e) => { T({ settings: { ...gameState.settings, sfxVolume: parseFloat(e.target.value) / 100 } }); });
         sfxToggle.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, sfx: e.target.checked } }); });
@@ -746,10 +773,9 @@ document.addEventListener('DOMContentLoaded', () => {
         notationSelector.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, notation: e.target.value } }); });
         devModeToggle.addEventListener('change', (e) => { T({ settings: { ...gameState.settings, devMode: e.target.checked } }); devModeCheats.style.display = e.target.checked ? 'grid' : 'none'; });
 
-        // Save Management Listeners
         manualSaveBtn.addEventListener('click', () => saveGame(true));
         exportSaveBtn.addEventListener('click', () => {
-            const saveData = JSON.stringify(gameState, null, 2); // Pretty-print the JSON
+            const saveData = JSON.stringify(gameState, null, 2);
             const blob = new Blob([saveData], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -759,13 +785,12 @@ document.addEventListener('DOMContentLoaded', () => {
             URL.revokeObjectURL(url);
             showAchievement('Save Exported!', 'Check your downloads for the save file.');
         });
-        // MODIFIED: Import function now handles plain text JSON, not base64.
         importSaveBtn.addEventListener('click', () => { 
             const saveData = prompt('Paste your save data here:'); 
             if (saveData) { 
                 try { 
                     T(JSON.parse(saveData)); 
-                    saveGame(true); // Manually save the imported data
+                    saveGame(true);
                     location.reload(); 
                 } catch (e) { 
                     alert('Invalid save data!'); 
@@ -773,7 +798,6 @@ document.addEventListener('DOMContentLoaded', () => {
             } 
         });
         
-        // Dev Cheats
         addCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e6 }); });
         add1bCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e9 }); });
         add1tCoinsCheat.addEventListener('click', () => { T({ coins: gameState.coins + 1e12 }); });
@@ -789,11 +813,11 @@ document.addEventListener('DOMContentLoaded', () => {
         shopBuyBtn.addEventListener('click', handleShopAction);
         
         setupNyanTree();
+        setupSettingsModal();
         
         applyTheme(gameState.settings.theme, gameState.settings.uiTheme);
         updateSkinAndMode(gameState.currentSkin);
 
-        // Set initial UI state from loaded game
         musicVolumeSlider.value = gameState.settings.musicVolume * 100;
         sfxVolumeSlider.value = gameState.settings.sfxVolume * 100;
         sfxToggle.checked = gameState.settings.sfx;
@@ -815,7 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderUpgrades(); 
         updateUpgradeStyles();
 
-        console.log("Nyan Cat Clicker Initialized and Upgraded with Canvas Particles!");
+        console.log("Nyan Cat Clicker Initialized.");
     }
 
     init();

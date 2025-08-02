@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- MODIFIED: Added maximum-scale and user-scalable=no for a more app-like feel on mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Nyan Cat Clicker Adventure</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -34,7 +35,6 @@
 			<div id="stats-tab" class="slide-tab">
 				<img src="assets/icons/stats.png" alt="Statistics">
 			</div>
-            <!-- MODIFIED: Hide this tab by default -->
             <div id="easter-eggs-tab" class="slide-tab" style="display: none;">
 				<img src="assets/icons/egg.png" alt="Easter Eggs">
 			</div>
@@ -146,76 +146,107 @@
         </div>
     </div>
 
+    <!-- MODIFIED: Settings Modal has been completely restructured for responsiveness -->
     <div id="settings-modal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-modal-x">×</span>
             <h2>Settings</h2>
-            <div class="settings-container">
-                <div class="settings-section">
-                    <div class="setting-item">
-                        <label for="music-volume-slider">Music Volume</label>
-                        <input type="range" id="music-volume-slider" min="0" max="100" value="50">
-                        <input type="checkbox" id="music-toggle" checked>
+            <div id="settings-grid">
+                <!-- Desktop Navigation Column -->
+                <nav id="settings-nav">
+                    <button class="nav-btn active" data-for-panel="audio">Audio</button>
+                    <button class="nav-btn" data-for-panel="display">Display</button>
+                    <button class="nav-btn" data-for-panel="data">Data</button>
+                    <button class="nav-btn" data-for-panel="dev">Developer</button>
+                </nav>
+
+                <!-- Settings Panels -->
+                <div id="settings-panels">
+                    <!-- Audio Panel -->
+                    <div class="settings-panel active" id="settings-panel-audio" data-panel="audio">
+                        <h3 class="panel-header">Audio</h3>
+                        <div class="panel-content">
+                            <div class="setting-item">
+                                <label for="music-volume-slider">Music Volume</label>
+                                <input type="range" id="music-volume-slider" min="0" max="100" value="50">
+                                <input type="checkbox" id="music-toggle" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label for="sfx-volume-slider">SFX Volume</label>
+                                <input type="range" id="sfx-volume-slider" min="0" max="100" value="80">
+                                <input type="checkbox" id="sfx-toggle" checked>
+                            </div>
+                            <div class="setting-item">
+                                <label for="global-mute-toggle">Mute All Audio</label>
+                                <input type="checkbox" id="global-mute-toggle">
+                            </div>
+                        </div>
                     </div>
-                    <div class="setting-item">
-                        <label for="sfx-volume-slider">SFX Volume</label>
-                        <input type="range" id="sfx-volume-slider" min="0" max="100" value="80">
-                        <input type="checkbox" id="sfx-toggle" checked>
+
+                    <!-- Display Panel -->
+                    <div class="settings-panel" id="settings-panel-display" data-panel="display">
+                        <h3 class="panel-header">Display</h3>
+                        <div class="panel-content">
+                            <div class="setting-item">
+                                <label for="dark-mode-toggle">Dark Mode</label>
+                                <input type="checkbox" id="dark-mode-toggle">
+                            </div>
+                            <div class="setting-item">
+                                <label for="theme-selector">UI Theme</label>
+                                <select id="theme-selector" class="btn">
+                                    <option value="default">Default</option>
+                                    <option value="vaporwave">Vaporwave</option>
+                                    <option value="matrix">Matrix</option>
+                                </select>
+                            </div>
+                            <div class="setting-item">
+                                <label for="notation-selector">Number Notation</label>
+                                <select id="notation-selector" class="btn">
+                                    <option value="standard">Standard (M, B, T)</option>
+                                    <option value="scientific">Scientific (e+6)</option>
+                                    <option value="engineering">Engineering (e+6)</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
-                    <div class="setting-item">
-                        <label for="global-mute-toggle">Mute All Audio</label>
-                        <input type="checkbox" id="global-mute-toggle">
+                    
+                    <!-- Data Panel -->
+                     <div class="settings-panel" id="settings-panel-data" data-panel="data">
+                        <h3 class="panel-header">Data</h3>
+                         <div class="panel-content">
+                             <div class="setting-item-group">
+                                 <button id="manual-save-btn" class="btn">Save Game</button>
+                                 <button id="export-save-btn" class="btn">Export Save</button>
+                                 <button id="import-save-btn" class="btn">Import Save</button>
+                             </div>
+                             <div class="setting-item-group">
+                                 <button id="reset-game-btn" class="btn btn-danger">Reset All Progress</button>
+                             </div>
+                         </div>
+                    </div>
+
+                    <!-- Developer Panel -->
+                    <div class="settings-panel" id="settings-panel-dev" data-panel="dev">
+                        <h3 class="panel-header">Developer</h3>
+                        <div class="panel-content">
+                            <div class="setting-item">
+                                <label for="dev-mode-toggle">Developer Mode</label>
+                                <input type="checkbox" id="dev-mode-toggle">
+                            </div>
+                            <div id="dev-mode-cheats" style="display: none;">
+                                <button id="add-coins-cheat" class="btn">Add 1M Coins</button>
+                                <button id="add-1b-coins-cheat" class="btn">Add 1B Coins</button>
+                                <button id="add-1t-coins-cheat" class="btn">Add 1T Coins</button>
+                                <button id="add-1q-coins-cheat" class="btn">Add 1Q Coins</button>
+                                <button id="add-rebirth-points-cheat" class="btn">Add 10 RP</button>
+                                <button id="get-249-upgrades-cheat" class="btn">Get 249 of Each</button>
+                                <button id="unlock-all-achievements-cheat" class="btn">Unlock Achievements</button>
+                                <button id="max-nyan-tree-cheat" class="btn">Max Nyan Tree</button>
+                                <button id="add-rebirths-cheat" class="btn">Add 5 Rebirths</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                 <div class="settings-section">
-                    <div class="setting-item">
-                        <label for="dark-mode-toggle">Dark Mode</label>
-                        <input type="checkbox" id="dark-mode-toggle">
-                    </div>
-                    <div class="setting-item">
-                        <label for="theme-selector">UI Theme</label>
-                        <select id="theme-selector" class="btn">
-                            <option value="default">Default</option>
-                            <option value="vaporwave">Vaporwave</option>
-                            <option value="matrix">Matrix</option>
-                        </select>
-                    </div>
-                    <div class="setting-item">
-                        <label for="notation-selector">Number Notation</label>
-                        <select id="notation-selector" class="btn">
-                            <option value="standard">Standard (M, B, T)</option>
-                            <option value="scientific">Scientific (e+6)</option>
-                            <option value="engineering">Engineering (e+6)</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <div class="setting-item">
-                        <label for="dev-mode-toggle">Developer Mode</label>
-                        <input type="checkbox" id="dev-mode-toggle">
-                    </div>
-                    <div id="dev-mode-cheats" style="display: none;">
-                        <button id="add-coins-cheat" class="btn">Add 1M Coins</button>
-                        <button id="add-1b-coins-cheat" class="btn">Add 1B Coins</button>
-                        <button id="add-1t-coins-cheat" class="btn">Add 1T Coins</button>
-                        <button id="add-1q-coins-cheat" class="btn">Add 1Q Coins</button>
-                        <button id="add-rebirth-points-cheat" class="btn">Add 10 RP</button>
-                        <button id="get-249-upgrades-cheat" class="btn">Get 249 of Each</button>
-                        <button id="unlock-all-achievements-cheat" class="btn">Unlock Achievements</button>
-                        <button id="max-nyan-tree-cheat" class="btn">Max Nyan Tree</button>
-                        <button id="add-rebirths-cheat" class="btn">Add 5 Rebirths</button>
-                    </div>
-                </div>
-                <div class="settings-section">
-                    <div class="setting-item">
-                        <button id="manual-save-btn" class="btn">Save Game</button>
-                        <button id="export-save-btn" class="btn">Export Save</button>
-                        <button id="import-save-btn" class="btn">Import Save</button>
-                    </div>
-                </div>
-            </div>
-            <div class="settings-footer">
-                <button id="reset-game-btn" class="btn">Reset All Progress</button>
             </div>
         </div>
     </div>

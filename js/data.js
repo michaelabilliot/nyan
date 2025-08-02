@@ -132,8 +132,8 @@ export const ACHIEVEMENTS_DATA = {
         'misc_dark_mode': { name: 'Hello Darkness', description: 'Check out the dark side.', condition: (gs) => gs.settings.theme === 'dark' },
         'misc_too_soon': { name: 'A Bit Ambitious', description: 'Try to rebirth before you can afford it.', condition: (gs) => gs.triedRebirthEarly },
         'misc_save_often': { name: 'Just In Case', description: 'The game has been saved.', condition: () => true, hidden: true },
-        // MODIFIED: Corrected the logic for this achievement to be possible.
-        'misc_words_apart': { name: 'Words Apart', description: 'Sometimes you need to keep your wolds apart.', isClickable: true, condition: (gs) => (gs.upgrades['sprinkles']?.owned > 0 && (gs.upgrades['lovebots']?.owned || 0) === 0 && gs.upgrades['rainbow_mice']?.owned > 0) },
+        // MODIFIED: Corrected the logic for this achievement to be possible, and fixed typo.
+        'misc_words_apart': { name: 'Words Apart', description: 'Sometimes you need to keep your worlds apart.', isClickable: true, condition: (gs) => (gs.upgrades['sprinkles']?.owned > 0 && (gs.upgrades['lovebots']?.owned || 0) === 0 && gs.upgrades['rainbow_mice']?.owned > 0) },
     }
 };
 

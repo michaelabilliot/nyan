@@ -1,5 +1,3 @@
-// js/utils.js
-
 import { gameState } from './state.js';
 
 /**

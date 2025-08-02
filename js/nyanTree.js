@@ -5,7 +5,7 @@ import { playSfx } from './audio.js';
 let selectedNode = null;
 let nyanTreeWrapper = null; // Cache element
 
-// MODIFIED: Reworked panning and added zooming
+// MODIFIED: Reworked panning and zooming to include touch support
 export function setupNyanTree() {
     const canvas = document.getElementById('nyan-tree-canvas');
     nyanTreeWrapper = document.getElementById('nyan-tree-wrapper');
@@ -29,27 +29,44 @@ export function setupNyanTree() {
     
     resetButton.addEventListener('click', resetView);
 
-    canvas.addEventListener('mousedown', (e) => {
+    const handlePanStart = (e) => {
+        // Prevent default behavior for touch events, like scrolling
+        if (e.type === 'touchstart') e.preventDefault();
+        
         isPanning = true;
-        startX = e.clientX - panX;
-        startY = e.clientY - panY;
+        const point = e.type === 'touchstart' ? e.touches[0] : e;
+        startX = point.clientX - panX;
+        startY = point.clientY - panY;
         canvas.style.cursor = 'grabbing';
-    });
+    };
 
-    canvas.addEventListener('mousemove', (e) => {
+    const handlePanMove = (e) => {
         if (!isPanning) return;
-        panX = e.clientX - startX;
-        panY = e.clientY - startY;
-        updateTransform();
-    });
+        // Prevent default behavior for touch events, like scrolling
+        if (e.type === 'touchmove') e.preventDefault();
 
-    const stopPanning = () => {
+        const point = e.type === 'touchmove' ? e.touches[0] : e;
+        panX = point.clientX - startX;
+        panY = point.clientY - startY;
+        updateTransform();
+    };
+
+    const handlePanEnd = () => {
         isPanning = false;
         canvas.style.cursor = 'grab';
     };
+    
+    // Mouse events
+    canvas.addEventListener('mousedown', handlePanStart);
+    canvas.addEventListener('mousemove', handlePanMove);
+    canvas.addEventListener('mouseup', handlePanEnd);
+    canvas.addEventListener('mouseleave', handlePanEnd);
 
-    canvas.addEventListener('mouseup', stopPanning);
-    canvas.addEventListener('mouseleave', stopPanning);
+    // Touch events
+    canvas.addEventListener('touchstart', handlePanStart, { passive: false });
+    canvas.addEventListener('touchmove', handlePanMove, { passive: false });
+    canvas.addEventListener('touchend', handlePanEnd);
+    canvas.addEventListener('touchcancel', handlePanEnd);
 
     canvas.addEventListener('wheel', (e) => {
         e.preventDefault();
