@@ -279,6 +279,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const addRebirthsCheat = document.getElementById('add-rebirths-cheat');
     
     function handleCatClick(event) {
+        // Prevent click logic if the user is dragging the panel
+        if (event.target.id === 'panel-grabber') return;
+
         playSfx('click');
         const clickPower = calculateClickPower(gameState);
         let newCoins = gameState.coins + clickPower;
@@ -547,6 +550,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
         setTimeout(gameLoop, 100);
     }
+
+    // ADDED: Logic for draggable panel on mobile
+    function initDraggablePanel() {
+        const grabber = document.getElementById('panel-grabber');
+        const rightPanel = document.getElementById('right-panel');
+        if (!grabber || !rightPanel) return;
+
+        let isDragging = false;
+        let startY, startHeight;
+
+        const onDragStart = (e) => {
+            isDragging = true;
+            startY = e.touches[0].clientY;
+            startHeight = rightPanel.offsetHeight;
+            rightPanel.style.transition = 'none'; // Disable transition while dragging
+            document.body.style.userSelect = 'none'; // Prevent text selection
+        };
+
+        const onDragMove = (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const deltaY = e.touches[0].clientY - startY;
+            let newHeight = startHeight - deltaY;
+
+            // Constrain height
+            const minHeight = 80; // Min height to show bottom nav
+            const maxHeight = window.innerHeight * 0.8; // Max 80% of screen height
+            if (newHeight < minHeight) newHeight = minHeight;
+            if (newHeight > maxHeight) newHeight = maxHeight;
+            
+            rightPanel.style.height = `${newHeight}px`;
+        };
+
+        const onDragEnd = () => {
+            isDragging = false;
+            rightPanel.style.transition = ''; // Re-enable transition for snapping
+            document.body.style.userSelect = ''; // Re-enable text selection
+        };
+
+        grabber.addEventListener('touchstart', onDragStart, { passive: false });
+        window.addEventListener('touchmove', onDragMove, { passive: false });
+        window.addEventListener('touchend', onDragEnd);
+    }
     
     function init() {
         setSaveGameCallback(saveGame);
@@ -561,7 +607,14 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        nyanCatImage.addEventListener('click', handleCatClick);
+        // MODIFIED: Changed click listener for better mobile experience
+        if (window.innerWidth <= 900) {
+            mainArea.addEventListener('click', handleCatClick);
+            initDraggablePanel();
+        } else {
+            nyanCatImage.addEventListener('click', handleCatClick);
+        }
+
         rebirthBtn.addEventListener('click', handleRebirth);
         multiplierBtn.addEventListener('click', cycleMultiplier);
         resetGameBtn.addEventListener('click', resetGame);
