@@ -116,6 +116,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    /* FIXED: Removed ../ from path */
     background-image: url('assets/space-bg-bw.jpg');
     background-position: 0 0;
     background-repeat: repeat-x;
@@ -133,6 +134,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
+    /* FIXED: Removed ../ from path */
     background-image: url('assets/gradient.png');
     background-size: cover;
     background-position: center;
@@ -141,6 +143,7 @@ body {
 }
 
 body.word-mode #game-container::before {
+    /* FIXED: Removed ../ from path */
     background-image: url('assets/word-bg.png');
     animation: none;
     background-size: cover;
@@ -187,6 +190,7 @@ body.word-mode #game-container::after {
     transition: opacity 0.5s ease;
     padding: 20px;
     box-sizing: border-box; 
+    /* FIXED: Removed ../ from path */
     background-image: url('assets/stars.png');
     background-size: cover;
 }
@@ -720,6 +724,7 @@ body.word-mode #game-container::after {
     position: absolute;
     width: 80px;
     height: 80px;
+    /* FIXED: Corrected path for golden poptart */
     background-image: url('assets/cats/golden-poptart.png');
     background-size: contain;
     background-repeat: no-repeat;

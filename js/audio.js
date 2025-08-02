@@ -9,9 +9,10 @@ const audioSources = {
     upgradeBuy: 'assets/audio/upgrade-buy.mp3',
     skinBuy: 'assets/audio/skin-buy.mp3',
     flash: 'assets/audio/flash.mp3', 
-    // MODIFIED: Corrected file paths
-    boost: 'assets/audio/boost.mp3',
-    boostClick: 'assets/audio/boost-click.mp3',
+    // MODIFIED: Commented out missing files to prevent 404 errors.
+    // If you have these files, ensure they are in the assets/audio folder.
+    // boost: 'assets/audio/boost.mp3',
+    // boostClick: 'assets/audio/boost-click.mp3',
 };
 
 const audioElements = {};
