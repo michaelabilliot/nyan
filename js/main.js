@@ -32,7 +32,7 @@ const trailImageCache = {};
 // --- DOM Element Caching ---
 let nyanCatImage, nyanCatContainer, rainbowContainer, transitionOverlay, 
     achievementsContent, achievementsModal, easterEggsModal, statsModal,
-    upgradesListEl, gameContainer, mainArea;
+    upgradesListEl, gameContainer, mainArea, statsDisplay;
 
 const WORD_TEXTS = ["WORD.", "SHIFT.", "WHATTTT", "OKAY"];
 const getWordText = () => WORD_TEXTS[Math.floor(Math.random() * WORD_TEXTS.length)];
@@ -232,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
     upgradesListEl = document.getElementById('upgrades-list');
     gameContainer = document.getElementById('game-container');
     mainArea = document.getElementById('main-area');
+    statsDisplay = document.getElementById('stats-display');
     
     trailCanvas = document.getElementById('trail-canvas');
     trailCtx = trailCanvas.getContext('2d');
@@ -279,14 +280,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const addRebirthsCheat = document.getElementById('add-rebirths-cheat');
     
     function handleCatClick(event) {
-        // Prevent click logic if the user is dragging the panel
         if (event.target.id === 'panel-grabber') return;
 
         playSfx('click');
         const clickPower = calculateClickPower(gameState);
         let newCoins = gameState.coins + clickPower;
         
-        // IMPLEMENTED: Lucky Paws perk
         if (gameState.nyanTreeUpgrades['unique_path_2b'] && Math.random() < 0.005) {
             const cps = calculateTotalCPS(gameState);
             const minutes = gameState.nyanTreeUpgrades['unique_path_3b'] ? 5 : 1;
@@ -551,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(gameLoop, 100);
     }
 
-    // ADDED: Logic for draggable panel on mobile
+    // FIXED: Robust draggable panel logic for mobile
     function initDraggablePanel() {
         const grabber = document.getElementById('panel-grabber');
         const rightPanel = document.getElementById('right-panel');
@@ -562,36 +561,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const onDragStart = (e) => {
             isDragging = true;
-            startY = e.touches[0].clientY;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            startY = clientY;
             startHeight = rightPanel.offsetHeight;
-            rightPanel.style.transition = 'none'; // Disable transition while dragging
-            document.body.style.userSelect = 'none'; // Prevent text selection
+            // Disable transitions for smooth dragging
+            rightPanel.style.transition = 'none';
+            nyanCatContainer.style.transition = 'none';
+            statsDisplay.style.transition = 'none';
+            document.body.style.cursor = 'ns-resize';
+            document.body.style.userSelect = 'none';
         };
 
         const onDragMove = (e) => {
             if (!isDragging) return;
             e.preventDefault();
-            const deltaY = e.touches[0].clientY - startY;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            const deltaY = clientY - startY;
             let newHeight = startHeight - deltaY;
 
-            // Constrain height
-            const minHeight = 80; // Min height to show bottom nav
-            const maxHeight = window.innerHeight * 0.8; // Max 80% of screen height
-            if (newHeight < minHeight) newHeight = minHeight;
-            if (newHeight > maxHeight) newHeight = maxHeight;
+            const minHeight = 150;
+            const maxHeight = window.innerHeight - 200;
+            newHeight = Math.max(minHeight, Math.min(newHeight, maxHeight));
             
             rightPanel.style.height = `${newHeight}px`;
+
+            // Move Nyan Cat up as the panel is pulled down for a centered look
+            const dragPercent = (newHeight - minHeight) / (maxHeight - minHeight);
+            const yOffset = (1 - dragPercent) * -40; // Move up to -40px
+            nyanCatContainer.style.transform = `translateY(${yOffset}px)`;
+            statsDisplay.style.transform = `translate(-50%, ${yOffset}px)`;
         };
 
         const onDragEnd = () => {
+            if (!isDragging) return;
             isDragging = false;
-            rightPanel.style.transition = ''; // Re-enable transition for snapping
-            document.body.style.userSelect = ''; // Re-enable text selection
+            // Re-enable transitions
+            rightPanel.style.transition = '';
+            nyanCatContainer.style.transition = '';
+            statsDisplay.style.transition = '';
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
         };
 
+        // Add both touch and mouse events for compatibility
         grabber.addEventListener('touchstart', onDragStart, { passive: false });
-        window.addEventListener('touchmove', onDragMove, { passive: false });
-        window.addEventListener('touchend', onDragEnd);
+        document.addEventListener('touchmove', onDragMove, { passive: false });
+        document.addEventListener('touchend', onDragEnd);
+
+        grabber.addEventListener('mousedown', onDragStart);
+        document.addEventListener('mousemove', onDragMove);
+        document.addEventListener('mouseup', onDragEnd);
     }
     
     function init() {
@@ -607,12 +626,12 @@ document.addEventListener('DOMContentLoaded', () => {
         window.addEventListener('resize', resizeCanvas);
         resizeCanvas();
 
-        // MODIFIED: Changed click listener for better mobile experience
+        // FIXED: Unconditionally add click listener to main-area for better UX
+        mainArea.addEventListener('click', handleCatClick);
+        
+        // Initialize draggable panel only on mobile view
         if (window.innerWidth <= 900) {
-            mainArea.addEventListener('click', handleCatClick);
             initDraggablePanel();
-        } else {
-            nyanCatImage.addEventListener('click', handleCatClick);
         }
 
         rebirthBtn.addEventListener('click', handleRebirth);

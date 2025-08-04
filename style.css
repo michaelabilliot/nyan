@@ -304,13 +304,13 @@ body.word-mode #game-container::after {
 }
 
 #main-area { flex: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; }
-#stats-display { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); text-align: center; text-shadow: 3px 3px 6px rgba(0,0,0,0.7); z-index: 100; transition: opacity 0.5s ease-out; contain: layout style; /* OPTIMIZATION */ }
+#stats-display { position: absolute; top: 15%; left: 50%; transform: translateX(-50%); text-align: center; text-shadow: 3px 3px 6px rgba(0,0,0,0.7); z-index: 100; transition: opacity 0.5s ease-out, transform 0.2s ease-out; contain: layout style; /* OPTIMIZATION */ }
 #stats-display h1 { font-size: 5em; margin: 0; font-family: 'Press Start 2P', cursive; color: #fff; }
 #stats-display p { font-size: 1.8em; margin-top: 10px; color: #eee; }
 #nyan-cat-container { 
     position: relative; 
     z-index: 10; 
-    transition: opacity 0.5s ease-out;
+    transition: opacity 0.5s ease-out, transform 0.2s ease-out;
     animation: nyan-bob 2.5s ease-in-out infinite;
 }
 #nyan-cat-image { width: 450px; cursor: pointer; transition: transform 0.1s ease; position: relative; image-rendering: pixelated; }
@@ -326,8 +326,10 @@ body.word-mode #game-container::after {
 .floating-number { position: absolute; font-size: 2.5em; font-weight: bold; color: var(--accent-yellow); text-shadow: 2px 2px 4px black; pointer-events: none; animation: float-up 1.2s ease-out forwards; z-index: 20; }
 .floating-number .decimal-part { font-size: 0.6em; }
 @keyframes float-up { 0% { transform: translateY(0) scale(1); opacity: 1; } 100% { transform: translateY(-180px) scale(1.5); opacity: 0; } }
+
 #right-panel-header { margin-bottom: 15px; }
 #controls-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+#multiplier-container { display: flex; align-items: center; gap: 8px; }
 
 #rebirth-info-container { 
     width: 100%; 
@@ -537,8 +539,7 @@ body.word-mode #game-container::after {
 
 #achievement-toast {
     position: fixed;
-    /* FIXED: Changed bottom to a large negative value to ensure it's off-screen */
-    bottom: -1000px;
+    bottom: -1000px; /* Start far off-screen */
     left: 50%;
     transform: translateX(-50%);
     background-color: var(--panel-bg);
@@ -551,7 +552,7 @@ body.word-mode #game-container::after {
     align-items: center;
     gap: 15px;
     z-index: 2000;
-    transition: bottom 0.5s ease-in-out, opacity 0.5s ease-in-out;
+    transition: all 0.5s ease-in-out;
     box-shadow: 0 0 20px var(--accent-green);
 }
 #achievement-toast.show { bottom: 20px; }
@@ -768,6 +769,10 @@ body.word-mode #game-container::after {
    Mobile & Responsive Styles
    ========================================================================== */
 
+#panel-grabber {
+    display: none; /* Hidden by default */
+}
+
 @media (max-width: 1024px) {
     /* General adjustments for tablets and smaller desktops */
     #stats-display h1 { font-size: 4em; }
@@ -788,35 +793,32 @@ body.word-mode #game-container::after {
         height: 100vh;
     }
 
-    /* MODIFIED: Changed flex properties for draggable panel */
     #main-area {
-        flex: 1; /* Let it take up remaining space */
+        flex: 1;
         width: 100%;
-        min-height: 200px; /* Set a minimum height */
+        min-height: 200px;
     }
 
-    /* MODIFIED: Changed flex properties for draggable panel */
     #right-panel {
-        height: 55vh; /* Set an initial height */
-        flex-shrink: 0; /* Prevent it from shrinking automatically */
+        height: 55vh;
+        flex-shrink: 0;
         width: 100%;
         border-left: none;
         border-top: 2px solid var(--border-color);
-        padding: 0 10px 10px 10px; /* Adjusted padding */
+        padding: 0 10px 70px 10px;
         box-sizing: border-box;
-        padding-bottom: 70px;
         display: flex;
         flex-direction: column;
         min-height: 0;
-        overflow: hidden; /* Hide content when panel is shrinking */
+        overflow: hidden;
     }
 
-    /* ADDED: Styles for the draggable handle */
+    /* FIXED: Make grabber visible and position correctly */
     #panel-grabber {
-        display: block; /* Only show on mobile */
-        width: 80px;
+        display: block;
+        width: 60px;
         height: 8px;
-        background-color: var(--border-color);
+        background-color: rgba(255, 255, 255, 0.4);
         border-radius: 4px;
         margin: 8px auto 10px;
         flex-shrink: 0;
@@ -880,7 +882,13 @@ body.word-mode #game-container::after {
     #stats-display p { font-size: 4vw; }
     
     #right-panel-header { margin-bottom: 10px; }
-    #controls-header { flex-wrap: wrap; gap: 10px; }
+    /* FIXED: Button layout in header */
+    #controls-header { 
+        gap: 10px; 
+    }
+    #multiplier-container {
+        margin-left: auto; /* Push to the right */
+    }
     .btn, #multiplier-btn, select.btn { font-size: 1em; padding: 8px 15px; }
     #rebirth-info-container { margin-top: 10px; }
     
@@ -973,6 +981,7 @@ body.word-mode #game-container::after {
     }
     /* End Settings Modal Mobile */
 
+
     /* FIXED: Achievement toast bug */
     #achievement-toast {
         bottom: unset;
@@ -1001,10 +1010,6 @@ body.word-mode #game-container::after {
     }
 }
 
-/* Hide grabber on desktop */
-#panel-grabber {
-    display: none;
-}
 
 /* (All previous CSS content) */
 /* ... */
